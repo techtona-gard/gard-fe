@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 
@@ -19,7 +20,7 @@ class _CameraPageState extends State<CameraPage> {
     super.initState();
     _controller = CameraController(
       widget.camera,
-      ResolutionPreset.high,
+      ResolutionPreset.max,
       enableAudio: false,
     );
     _initializeControllerFuture = _controller.initialize();
@@ -48,7 +49,10 @@ class _CameraPageState extends State<CameraPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Foto berhasil disimpan: ${image.name}')),
+          SnackBar(
+            content: Text('Foto berhasil dianalisis: ${image.name}'),
+            backgroundColor: const Color(0xFF006D32),
+          ),
         );
         Navigator.pop(context);
       }
@@ -59,7 +63,8 @@ class _CameraPageState extends State<CameraPage> {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = Colors.green.shade700;
+    const emeraldGreen = Color(0xFF006D32);
+    const neonGreen = Color(0xFF39FF14);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -67,120 +72,163 @@ class _CameraPageState extends State<CameraPage> {
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
-            return Column(
+            return Stack(
               children: [
-                // Top Bar
-                Container(
-                  padding: const EdgeInsets.only(top: 50, bottom: 20, left: 20, right: 20),
-                  color: Colors.black,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 28),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const Text(
-                        'Ambil Foto Makanan',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(width: 48), // Spacer to balance
-                    ],
-                  ),
+                // 1. Camera Preview (Full Screen)
+                Positioned.fill(
+                  child: CameraPreview(_controller),
                 ),
 
-                // Camera Viewfinder (Fixed 3:4 Aspect Ratio without distortion)
-                Expanded(
-                  child: Container(
-                    color: Colors.black,
-                    child: Center(
-                      child: AspectRatio(
-                        aspectRatio: 3 / 4,
-                        child: ClipRRect(
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              // This ensures the preview fills the 3:4 box without distortion
-                              FittedBox(
-                                fit: BoxFit.cover,
-                                child: SizedBox(
-                                  width: _controller.value.previewSize?.height ?? 1,
-                                  height: _controller.value.previewSize?.width ?? 1,
-                                  child: CameraPreview(_controller),
-                                ),
-                              ),
-                              // Scan Frame
-                              Center(
-                                child: Container(
-                                  width: 250,
-                                  height: 250,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                ),
-                              ),
-                              _buildCornerOverlay(),
-                            ],
+                // 2. Translucent Overlay with Cutout Scanner Frame
+                Positioned.fill(
+                  child: ColorFiltered(
+                    colorFilter: ColorFilter.mode(
+                      Colors.black.withOpacity(0.6),
+                      BlendMode.srcOut,
+                    ),
+                    child: Stack(
+                      children: [
+                        Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.black,
+                            backgroundBlendMode: BlendMode.dstOut,
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Bottom Actions (White Bar)
-                Container(
-                  height: 140,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      const SizedBox(width: 60), // Symmetry
-                      
-                      // Capture Button
-                      GestureDetector(
-                        onTap: _takePicture,
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: themeColor, width: 4),
-                          ),
-                          padding: const EdgeInsets.all(6),
+                        Center(
                           child: Container(
+                            width: 280,
+                            height: 280,
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: themeColor,
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(30),
                             ),
                           ),
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
+                ),
 
-                      // Flash Button
-                      IconButton(
-                        icon: Icon(
-                          _isFlashOn ? Icons.flash_on : Icons.flash_off,
-                          color: themeColor,
-                          size: 32,
+                // 3. Esthetic Scanning Frame Border
+                Center(
+                  child: Container(
+                    width: 280,
+                    height: 280,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: neonGreen.withOpacity(0.5), width: 1.5),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Stack(
+                      children: [
+                        _buildCorner(Alignment.topLeft, neonGreen),
+                        _buildCorner(Alignment.topRight, neonGreen),
+                        _buildCorner(Alignment.bottomLeft, neonGreen),
+                        _buildCorner(Alignment.bottomRight, neonGreen),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 4. Top Navigation Bar
+                Positioned(
+                  top: 50,
+                  left: 0,
+                  right: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, color: Colors.white, size: 30),
+                          onPressed: () => Navigator.pop(context),
                         ),
-                        onPressed: _toggleFlash,
+                        const Text(
+                          'Pindai Makanan',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(width: 48), // Balancing spacer
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 5. Bottom Control Bar (Curved White Container)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 40),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(40),
+                        topRight: Radius.circular(40),
                       ),
-                    ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Left Placeholder for balance
+                        const SizedBox(width: 48),
+
+                        // Main Capture Button
+                        GestureDetector(
+                          onTap: _takePicture,
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: emeraldGreen.withOpacity(0.2), width: 2),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: emeraldGreen, width: 4),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: emeraldGreen.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  )
+                                ],
+                              ),
+                              child: const Icon(Icons.camera_alt_rounded, color: emeraldGreen, size: 32),
+                            ),
+                          ),
+                        ),
+
+                        // Flash Toggle Button
+                        IconButton(
+                          onPressed: _toggleFlash,
+                          icon: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            child: Icon(
+                              _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                              key: ValueKey(_isFlashOn),
+                              color: _isFlashOn ? Colors.orangeAccent : Colors.grey.shade400,
+                              size: 28,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             );
           } else {
             return const Center(
-              child: CircularProgressIndicator(color: Colors.green),
+              child: CircularProgressIndicator(color: emeraldGreen),
             );
           }
         },
@@ -188,42 +236,28 @@ class _CameraPageState extends State<CameraPage> {
     );
   }
 
-  Widget _buildCornerOverlay() {
-    return Center(
-      child: SizedBox(
-        width: 250,
-        height: 250,
-        child: Stack(
-          children: [
-            _buildCorner(Alignment.topLeft),
-            _buildCorner(Alignment.topRight),
-            _buildCorner(Alignment.bottomLeft),
-            _buildCorner(Alignment.bottomRight),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCorner(Alignment alignment) {
+  Widget _buildCorner(Alignment alignment, Color color) {
+    const double cornerSize = 30;
+    const double thickness = 4;
+    
     return Align(
       alignment: alignment,
       child: Container(
-        width: 30,
-        height: 30,
+        width: cornerSize,
+        height: cornerSize,
         decoration: BoxDecoration(
           border: Border(
             top: (alignment == Alignment.topLeft || alignment == Alignment.topRight)
-                ? const BorderSide(color: Colors.green, width: 4)
+                ? BorderSide(color: color, width: thickness)
                 : BorderSide.none,
             bottom: (alignment == Alignment.bottomLeft || alignment == Alignment.bottomRight)
-                ? const BorderSide(color: Colors.green, width: 4)
+                ? BorderSide(color: color, width: thickness)
                 : BorderSide.none,
             left: (alignment == Alignment.topLeft || alignment == Alignment.bottomLeft)
-                ? const BorderSide(color: Colors.green, width: 4)
+                ? BorderSide(color: color, width: thickness)
                 : BorderSide.none,
             right: (alignment == Alignment.topRight || alignment == Alignment.bottomRight)
-                ? const BorderSide(color: Colors.green, width: 4)
+                ? BorderSide(color: color, width: thickness)
                 : BorderSide.none,
           ),
         ),

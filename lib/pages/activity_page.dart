@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:gard_fe/services/notification_service.dart';
 
 class ActivityPage extends StatefulWidget {
   const ActivityPage({super.key});
@@ -36,7 +37,7 @@ class _ActivityPageState extends State<ActivityPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Full Month Calendar Card
+              // Calendar Card
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -50,28 +51,23 @@ class _ActivityPageState extends State<ActivityPage> {
                   onDaySelected: (selectedDay, focusedDay) {
                     setState(() {
                       _selectedDay = selectedDay;
-                      _focusedDay = focusedDay; // update focusedDay as well
+                      _focusedDay = focusedDay;
                     });
-                  },
-                  onPageChanged: (focusedDay) {
-                    _focusedDay = focusedDay;
                   },
                   calendarStyle: CalendarStyle(
                     todayDecoration: BoxDecoration(color: themeColor.withOpacity(0.3), shape: BoxShape.circle),
                     selectedDecoration: BoxDecoration(color: themeColor, shape: BoxShape.circle),
-                    markerDecoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
                   ),
                   headerStyle: const HeaderStyle(
                     formatButtonVisible: false,
                     titleCentered: true,
-                    titleTextStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              // Daily Reminders Card
+              // Daily Reminders Card (Tap to trigger Alarm)
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -82,20 +78,38 @@ class _ActivityPageState extends State<ActivityPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'PENGINGAT HARI INI',
+                      'PENGINGAT HARI INI (TAP UNTUK TES ALARM)',
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
                     ),
                     const SizedBox(height: 16),
-                    _buildActivityItem('Sarapan Pagi', '07:30', Icons.wb_sunny_outlined, Colors.orange),
-                    _buildActivityItem('Makan Siang', '12:30', Icons.restaurant, Colors.green),
-                    _buildActivityItem('Makan Malam', '19:00', Icons.nightlight_round, Colors.blue),
+                    _buildActivityItem('Sarapan Pagi', '07:30', Icons.wb_sunny_outlined, Colors.orange, () {
+                      NotificationService.scheduleEatingReminder(
+                        title: 'Waktunya Sarapan! 🥣',
+                        body: 'Jangan lupa sarapan sehat untuk menjaga lambungmu.',
+                        secondsDelay: 3,
+                      );
+                    }),
+                    _buildActivityItem('Makan Siang', '12:30', Icons.restaurant, Colors.green, () {
+                      NotificationService.scheduleEatingReminder(
+                        title: 'Waktunya Makan Siang! 🥗',
+                        body: 'Sudah jam 12:30, yuk makan siang tepat waktu.',
+                        secondsDelay: 3,
+                      );
+                    }),
+                    _buildActivityItem('Makan Malam', '19:00', Icons.nightlight_round, Colors.blue, () {
+                      NotificationService.scheduleEatingReminder(
+                        title: 'Waktunya Makan Malam! 🍲',
+                        body: 'Jangan makan terlalu malam ya agar GERD tidak kambuh.',
+                        secondsDelay: 3,
+                      );
+                    }),
                   ],
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              // Consultation Card
+              // Consultation Card (Changed to Green)
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -113,15 +127,15 @@ class _ActivityPageState extends State<ActivityPage> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: Colors.green.shade50, // Changed to Green
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.blue.shade100),
+                        border: Border.all(color: Colors.green.shade100),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.video_call, color: Colors.blue),
-                          SizedBox(width: 16),
-                          Expanded(
+                          Icon(Icons.video_call, color: themeColor),
+                          const SizedBox(width: 16),
+                          const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -144,33 +158,36 @@ class _ActivityPageState extends State<ActivityPage> {
     );
   }
 
-  Widget _buildActivityItem(String title, String time, IconData icon, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xfff8f9fa),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                Text(time, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-              ],
+  Widget _buildActivityItem(String title, String time, IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xfff8f9fa),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 20),
             ),
-          ),
-          const Icon(Icons.check_circle_outline, color: Colors.grey, size: 20),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text(time, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.play_circle_outline, color: Colors.green, size: 24),
+          ],
+        ),
       ),
     );
   }

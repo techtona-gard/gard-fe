@@ -1,12 +1,14 @@
+import 'dart:typed_data';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:gard_fe/main.dart';
 import 'package:gard_fe/pages/camera_page.dart';
+import 'package:gard_fe/pages/chatbot_page.dart';
 
 class NotificationService {
   static Future<void> initializeNotification() async {
     await AwesomeNotifications().initialize(
-      null, // null for default icon
+      null,
       [
         NotificationChannel(
           channelGroupKey: 'reminders_group',
@@ -17,9 +19,13 @@ class NotificationService {
           ledColor: Colors.white,
           importance: NotificationImportance.Max,
           channelShowBadge: true,
-          onlyAlertOnce: true,
+          onlyAlertOnce: false,
           criticalAlerts: true,
           playSound: true,
+          defaultRingtoneType: DefaultRingtoneType.Alarm,
+          enableVibration: true,
+          vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000, 500, 1000]),
+          enableLights: true,
         )
       ],
       channelGroups: [
@@ -31,7 +37,6 @@ class NotificationService {
       debug: true,
     );
 
-    // Request permission explicitly
     await AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
       if (!isAllowed) {
         AwesomeNotifications().requestPermissionToSendNotifications();
@@ -47,49 +52,82 @@ class NotificationService {
   }
 
   static Future<void> onNotificationCreatedMethod(ReceivedNotification receivedNotification) async {
-    debugPrint('Notification created');
+    debugPrint('Notification Created: ${receivedNotification.id}');
   }
 
   static Future<void> onNotificationDisplayedMethod(ReceivedNotification receivedNotification) async {
-    debugPrint('Notification displayed');
+    debugPrint('Notification Displayed: ${receivedNotification.id}');
   }
 
   static Future<void> onDismissActionReceivedMethod(ReceivedAction receivedAction) async {
-    debugPrint('Notification dismissed');
+    debugPrint('Notification Dismissed: ${receivedAction.id}');
   }
 
+  @pragma("vm:entry-point")
   static Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
     final BuildContext? context = MyApp.navigatorKey.currentContext;
 
     if (receivedAction.buttonKeyPressed == 'FOTO_MAKANAN') {
       if (context != null && cameras.isNotEmpty) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CameraPage(camera: cameras.first),
-          ),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (context) => CameraPage(camera: cameras.first)));
       }
-    } else if (receivedAction.buttonKeyPressed == 'SNOOZE') {
-      scheduleEatingReminder(
-        title: 'Snoozed Reminder',
-        body: 'Waktunya makan untuk kesehatan lambungmu!',
-        secondsDelay: 15 * 60,
-      );
+    } else if (receivedAction.buttonKeyPressed == 'CHAT') {
+      if (context != null) {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatbotPage()));
+      }
+    } else if (receivedAction.buttonKeyPressed == 'SNOOZE_OPTIONS') {
+      if (context != null) {
+        _showSnoozeDialog(context);
+      }
     }
+  }
+
+  static void _showSnoozeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pilih Waktu Tunda (Snooze)'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _snoozeOption(context, 10),
+            _snoozeOption(context, 20),
+            _snoozeOption(context, 30),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _snoozeOption(BuildContext context, int mins) {
+    return ListTile(
+      leading: const Icon(Icons.timer_outlined, color: Colors.green),
+      title: Text('$mins Menit'),
+      onTap: () {
+        Navigator.pop(context);
+        // Untuk snooze minimal 10 menit, jadi aman di atas 5 detik
+        scheduleEatingReminder(
+          title: 'Eating Reminder (Snoozed)',
+          body: 'Waktunya makan untuk kesehatan lambungmu!',
+          secondsDelay: mins * 60,
+        );
+      },
+    );
   }
 
   static Future<void> scheduleEatingReminder({
     required String title,
     required String body,
-    int secondsDelay = 5,
+    int secondsDelay = 6, // Default diubah ke 6 agar aman dari limit minimum 5 detik
   }) async {
-    bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
-    if (!isAllowed) {
-      isAllowed = await AwesomeNotifications().requestPermissionToSendNotifications();
-    }
+    try {
+      bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
+      if (!isAllowed) return;
 
-    if (isAllowed) {
+      // Memastikan interval minimal 6 detik untuk menghindari PlatformException
+      int finalInterval = secondsDelay < 6 ? 6 : secondsDelay;
+
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
@@ -97,10 +135,12 @@ class NotificationService {
           title: title,
           body: body,
           category: NotificationCategory.Alarm,
-          notificationLayout: NotificationLayout.Default,
-          fullScreenIntent: true,
+          notificationLayout: NotificationLayout.BigText,
+          fullScreenIntent: true, 
           wakeUpScreen: true,
-          // criticalAlert is not a direct parameter in 0.12.1 for NotificationContent
+          autoDismissible: false,
+          locked: true,
+          backgroundColor: Colors.green,
         ),
         actionButtons: [
           NotificationActionButton(
@@ -110,18 +150,26 @@ class NotificationService {
             actionType: ActionType.Default,
           ),
           NotificationActionButton(
-            key: 'SNOOZE',
-            label: 'Snooze (15m)',
+            key: 'CHAT',
+            label: 'Chat (Sudah Makan)',
+            actionType: ActionType.Default,
+          ),
+          NotificationActionButton(
+            key: 'SNOOZE_OPTIONS',
+            label: 'Snooze...',
             actionType: ActionType.Default,
           ),
         ],
         schedule: NotificationInterval(
-          interval: Duration(seconds: secondsDelay),
+          interval: Duration(seconds: finalInterval),
           timeZone: await AwesomeNotifications().getLocalTimeZoneIdentifier(),
           preciseAlarm: true,
           repeats: false,
         ),
       );
+      debugPrint('Notification Scheduled for $finalInterval seconds');
+    } catch (e) {
+      debugPrint('Error scheduling notification: $e');
     }
   }
 }

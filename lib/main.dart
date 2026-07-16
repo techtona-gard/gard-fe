@@ -5,6 +5,7 @@ import 'package:gard_fe/pages/activity_page.dart';
 import 'package:gard_fe/pages/profile_page.dart';
 import 'package:gard_fe/pages/login_page.dart';
 import 'package:gard_fe/pages/home_page.dart';
+import 'package:gard_fe/pages/history_page.dart';
 import 'package:gard_fe/services/notification_service.dart';
 
 List<CameraDescription> cameras = [];
@@ -34,12 +35,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const emeraldGreen = Color(0xFF006D32);
+
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Gard-Fe',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        colorScheme: ColorScheme.fromSeed(seedColor: emeraldGreen),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
       ),
       home: const LoginPage(),
       debugShowCheckedModeBanner: false,
@@ -57,74 +61,55 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
-  late final List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-    _pages = [
-      const HomePage(key: ValueKey('home')),
-      const ActivityPage(key: ValueKey('activity')),
-      const Center(key: ValueKey('camera_placeholder'), child: Text('Halaman Camera / Scan', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
-      const HistoryPage(key: ValueKey('history')),
-      const ProfilePage(key: ValueKey('profile')),
-    ];
-  }
-
-  void _onItemTapped(int index) {
-    if (index == 2) {
-      if (cameras.isNotEmpty) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => CameraPage(camera: cameras.first)),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Kamera tidak ditemukan pada perangkat ini')),
-        );
-      }
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
-  }
+  final List<Widget> _pages = [
+    const HomePage(key: ValueKey('home')),
+    const ActivityPage(key: ValueKey('activity')),
+    const HistoryPage(key: ValueKey('history')),
+    const ProfilePage(key: ValueKey('profile')),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = Colors.green.shade700;
+    const emeraldGreen = Color(0xFF006D32);
 
     return Scaffold(
-      backgroundColor: const Color(0xfff4f4f4),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: _pages[_selectedIndex],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: SizedBox(
-        width: 62,
-        height: 62,
+      floatingActionButton: Container(
+        height: 68,
+        width: 68,
+        decoration: BoxDecoration(
+          color: emeraldGreen,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: emeraldGreen.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            )
+          ],
+        ),
         child: FloatingActionButton(
-          onPressed: () => _onItemTapped(2),
-          elevation: 3,
+          onPressed: () {
+            if (cameras.isNotEmpty) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CameraPage(camera: cameras.first)),
+              );
+            }
+          },
+          elevation: 0,
+          backgroundColor: Colors.transparent,
           shape: const CircleBorder(),
-          backgroundColor: themeColor,
-          foregroundColor: Colors.white,
-          child: const Icon(Icons.camera_alt_outlined, size: 26),
+          child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 30),
         ),
       ),
       bottomNavigationBar: BottomAppBar(
-        clipBehavior: Clip.antiAlias,
-        shape: const AutomaticNotchedShape(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-            ),
-          ),
-          CircleBorder(),
-        ),
-        notchMargin: 7.0,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 10,
         color: Colors.white,
         elevation: 10,
         height: 75,
@@ -132,157 +117,45 @@ class _MainNavigationState extends State<MainNavigation> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(index: 0, icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home', activeColor: themeColor),
-            _buildNavItem(index: 1, icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month, label: 'Activity', activeColor: themeColor),
-            const SizedBox(width: 44),
-            _buildNavItem(index: 3, icon: Icons.receipt_long_outlined, activeIcon: Icons.receipt_long, label: 'History', activeColor: themeColor),
-            _buildNavItem(index: 4, icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile', activeColor: themeColor),
+            _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home', emeraldGreen),
+            _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Aktivitas', emeraldGreen),
+            const SizedBox(width: 48), // Gap for FAB
+            _buildNavItem(2, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Riwayat', emeraldGreen),
+            _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'Profil', emeraldGreen),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem({
-    required int index,
-    required IconData icon,
-    required IconData activeIcon,
-    required String label,
-    required Color activeColor,
-  }) {
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label, Color activeColor) {
     final isSelected = _selectedIndex == index;
-
     return InkWell(
-      onTap: () => _onItemTapped(index),
+      onTap: () => setState(() => _selectedIndex = index),
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       child: SizedBox(
         width: 65,
-        height: 75,
-        child: Stack(
-          alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              top: isSelected ? 22 : 14,
-              child: Icon(
-                isSelected ? activeIcon : icon,
+            Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected ? activeColor : Colors.grey.shade400,
+              size: 26,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? activeColor : Colors.grey.shade400,
-                size: isSelected ? 30 : 25,
-              ),
-            ),
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              bottom: isSelected ? 0 : 12,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 150),
-                opacity: isSelected ? 0.0 : 1.0,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey.shade500,
-                  ),
-                  maxLines: 1,
-                ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class HistoryPage extends StatelessWidget {
-  const HistoryPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final themeColor = Colors.green.shade700;
-    return Scaffold(
-      backgroundColor: const Color(0xfff4f4f4),
-      appBar: AppBar(
-        title: const Text('Rekam Medis & History', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: themeColor,
-        foregroundColor: Colors.white,
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            _buildHistoryItem(
-              context,
-              'Gejala GERD Terdeteksi',
-              '16 Juli 2024, 08:30',
-              'Tingkat Keparahan: Sedang',
-              Icons.warning_amber_rounded,
-              Colors.orange,
-            ),
-            _buildHistoryItem(
-              context,
-              'Konsultasi Dokter',
-              '14 Juli 2024, 10:00',
-              'Dokter: dr. Andi (Sp.PD)',
-              Icons.medical_services_outlined,
-              Colors.blue,
-            ),
-            _buildHistoryItem(
-              context,
-              'Pemeriksaan GerdQ',
-              '10 Juli 2024, 20:00',
-              'Hasil: Resiko Tinggi',
-              Icons.assignment_outlined,
-              Colors.red,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHistoryItem(BuildContext context, String title, String date, String desc, IconData icon, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                Text(date, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                const SizedBox(height: 4),
-                Text(desc, style: const TextStyle(color: Colors.black54, fontSize: 13)),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () {},
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.green.shade700,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
-            child: const Text('DETAIL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }
