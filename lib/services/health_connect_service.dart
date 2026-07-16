@@ -1,4 +1,5 @@
 import 'package:health/health.dart';
+import 'package:flutter/foundation.dart';
 
 class HealthService {
   final Health _health = Health();
@@ -20,29 +21,34 @@ class HealthService {
 
   /// Inisialisasi plugin & set SDK ke Health Connect
   Future<void> init() async {
-    _health.configure();
+    await _health.configure();
+  }
+
+  /// Cek apakah izin sudah diberikan
+  Future<bool> hasPermissions() async {
+    try {
+      bool? hasPermission = await _health.hasPermissions(
+        _types,
+        permissions: _permissions,
+      );
+      return hasPermission ?? false;
+    } catch (e) {
+      debugPrint('Error checking permissions: $e');
+      return false;
+    }
   }
 
   /// Minta izin ke user via dialog Health Connect
   Future<bool> requestPermissions() async {
     try {
-      // Cek apakah izin sudah pernah diberikan
-      bool? hasPermission = await _health.hasPermissions(
+      // Tampilkan popup minta izin dari sistem Health Connect
+      bool hasPermission = await _health.requestAuthorization(
         _types,
         permissions: _permissions,
       );
-
-      if (hasPermission != true) {
-        // Tampilkan popup minta izin dari sistem Health Connect
-        hasPermission = await _health.requestAuthorization(
-          _types,
-          permissions: _permissions,
-        );
-      }
-
-      return hasPermission ?? false;
+      return hasPermission;
     } catch (e) {
-      print('Error requesting Health Connect permissions: $e');
+      debugPrint('Error requesting Health Connect permissions: $e');
       return false;
     }
   }
@@ -66,7 +72,7 @@ class HealthService {
       // Bersihkan data duplikat jika sync dari multiple device
       return _health.removeDuplicates(healthData);
     } catch (e) {
-      print('Error fetching health data: $e');
+      debugPrint('Error fetching health data: $e');
       return [];
     }
   }

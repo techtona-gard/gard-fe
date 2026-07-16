@@ -38,6 +38,7 @@ dependencies:
   awesome_notifications: ^0.12.1
   table_calendar: ^3.1.2
   health: ^13.3.1
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
