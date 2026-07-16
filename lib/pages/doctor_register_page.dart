@@ -24,7 +24,6 @@ class _DoctorRegisterPageState extends State<DoctorRegisterPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Brand Logo/Header
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -50,8 +49,6 @@ class _DoctorRegisterPageState extends State<DoctorRegisterPage> {
                 style: TextStyle(fontSize: 12, color: Colors.grey, letterSpacing: 1.2, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 48),
-
-              // Policy Section (Inspired by Image 1)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -72,7 +69,6 @@ class _DoctorRegisterPageState extends State<DoctorRegisterPage> {
                 style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 32),
-
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -113,10 +109,7 @@ class _DoctorRegisterPageState extends State<DoctorRegisterPage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // Agreement Checkbox
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -139,10 +132,7 @@ class _DoctorRegisterPageState extends State<DoctorRegisterPage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 48),
-
-              // Action Buttons
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -161,7 +151,6 @@ class _DoctorRegisterPageState extends State<DoctorRegisterPage> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: _isAgreed ? () {
-                    // Simulate Google Sign-In then navigate
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const DoctorVerificationPage()));
                   } : null,
                   style: ElevatedButton.styleFrom(
@@ -174,7 +163,6 @@ class _DoctorRegisterPageState extends State<DoctorRegisterPage> {
                   child: const Text('Daftar Sebagai Dokter', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
-              
               const SizedBox(height: 40),
               const Text(
                 'GARD PLATFORM © 2024',

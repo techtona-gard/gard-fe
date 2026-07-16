@@ -59,7 +59,6 @@ class LoginPage extends StatelessWidget {
                         style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                       const SizedBox(height: 40),
-
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -96,7 +95,6 @@ class LoginPage extends StatelessWidget {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 32),
                       Row(
                         children: [
@@ -109,7 +107,6 @@ class LoginPage extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 24),
-
                       _buildAccessRule(
                         icon: Icons.person_outline,
                         title: 'Pengguna Umum',
@@ -126,9 +123,7 @@ class LoginPage extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 32),
-                
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

@@ -32,7 +32,6 @@ class _ActivityPageState extends State<ActivityPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Elegant Rounded Header (Non-floating)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
@@ -71,7 +70,6 @@ class _ActivityPageState extends State<ActivityPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 2. Clean Monthly Calendar Card
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -143,7 +141,6 @@ class _ActivityPageState extends State<ActivityPage> {
 
                   const SizedBox(height: 32),
 
-                  // 3. Activity Reminders Section
                   const Text(
                     'PENGINGAT HARI INI',
                     style: TextStyle(
@@ -192,7 +189,7 @@ class _ActivityPageState extends State<ActivityPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 120), // Space for navigation
+                  const SizedBox(height: 120),
                 ],
               ),
             ),

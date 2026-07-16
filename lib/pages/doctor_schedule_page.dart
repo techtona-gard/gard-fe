@@ -40,7 +40,6 @@ class _DoctorSchedulePageState extends State<DoctorSchedulePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Calendar Card (Sama seperti gaya pasien)
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -108,10 +107,7 @@ class _DoctorSchedulePageState extends State<DoctorSchedulePage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 32),
-
-              // 2. Timeline Section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -128,14 +124,11 @@ class _DoctorSchedulePageState extends State<DoctorSchedulePage> {
                 ],
               ),
               const SizedBox(height: 20),
-
-              // Daftar Item (Manual list agar scroll mengikuti scroll utama)
               _buildScheduleItem('09:00', 'Siti Aminah', 'Telekonsultasi', true),
               _buildScheduleItem('10:30', 'Reza Rahadian', 'Tatap Muka', true),
               _buildScheduleItem('13:00', 'Wulan Sari', 'Telekonsultasi', false),
               _buildScheduleItem('15:00', 'Ahmad Dani', 'Tatap Muka', false),
-              
-              const SizedBox(height: 100), // Space for bottom nav
+              const SizedBox(height: 100),
             ],
           ),
         ),

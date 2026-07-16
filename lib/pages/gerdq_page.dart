@@ -73,9 +73,9 @@ class _GerdQPageState extends State<GerdQPage> {
       int score = 0;
       int answerIndex = _answers[i]!;
       if (_questions[i]['type'] == 'positive') {
-        score = answerIndex; // 0=0, 1=1, 2=2, 3=3
+        score = answerIndex;
       } else {
-        score = 3 - answerIndex; // 0=3, 1=2, 2=1, 3=0
+        score = 3 - answerIndex;
       }
       totalScore += score;
     }
@@ -124,7 +124,6 @@ class _GerdQPageState extends State<GerdQPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 30),
-              // Dynamic Torso Silhouette Visualization
               SizedBox(
                 height: 140,
                 width: 100,
@@ -136,8 +135,6 @@ class _GerdQPageState extends State<GerdQPage> {
                 ),
               ),
               const SizedBox(height: 30),
-              
-              // Question Indicator
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -155,8 +152,6 @@ class _GerdQPageState extends State<GerdQPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              
-              // Question Text
               Text(
                 _questions[_currentStep]['question'],
                 textAlign: TextAlign.center,
@@ -168,8 +163,6 @@ class _GerdQPageState extends State<GerdQPage> {
                 ),
               ),
               const SizedBox(height: 40),
-              
-              // Options List
               Expanded(
                 child: ListView.separated(
                   physics: const BouncingScrollPhysics(),
@@ -279,16 +272,13 @@ class TorsoPainter extends CustomPainter {
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
 
-    // Simple Human Silhouette Path
     final path = Path();
-    path.moveTo(size.width * 0.5, size.height * 0.1); // Head top
-    path.addOval(Rect.fromLTWH(size.width * 0.35, 0, size.width * 0.3, size.height * 0.2)); // Head
+    path.moveTo(size.width * 0.5, size.height * 0.1); 
+    path.addOval(Rect.fromLTWH(size.width * 0.35, 0, size.width * 0.3, size.height * 0.2)); 
     
-    // Neck
     path.moveTo(size.width * 0.45, size.height * 0.2);
     path.lineTo(size.width * 0.55, size.height * 0.2);
     
-    // Shoulders and Torso
     path.moveTo(size.width * 0.2, size.height * 0.3);
     path.quadraticBezierTo(size.width * 0.5, size.height * 0.25, size.width * 0.8, size.height * 0.3);
     path.lineTo(size.width * 0.75, size.height * 0.8);
@@ -297,7 +287,6 @@ class TorsoPainter extends CustomPainter {
 
     canvas.drawPath(path, paint);
 
-    // Dynamic Highlight based on area
     Offset center = Offset.zero;
     double radius = 15;
 
@@ -335,7 +324,6 @@ class TorsoPainter extends CustomPainter {
       oldDelegate.highlightArea != highlightArea;
 }
 
-
 class GerdQResultPage extends StatelessWidget {
   final int score;
   const GerdQResultPage({super.key, required this.score});
@@ -364,7 +352,6 @@ class GerdQResultPage extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               
-              // Result Card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(32),
@@ -396,7 +383,6 @@ class GerdQResultPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     
-                    // Badge
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                       decoration: BoxDecoration(
@@ -436,13 +422,11 @@ class GerdQResultPage extends StatelessWidget {
               
               const Spacer(),
               
-              // Action Buttons
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Action: Download
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Mengunduh hasil laporan...')),
                     );

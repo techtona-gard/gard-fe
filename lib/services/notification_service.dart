@@ -106,7 +106,6 @@ class NotificationService {
       title: Text('$mins Menit'),
       onTap: () {
         Navigator.pop(context);
-        // Untuk snooze minimal 10 menit, jadi aman di atas 5 detik
         scheduleEatingReminder(
           title: 'Eating Reminder (Snoozed)',
           body: 'Waktunya makan untuk kesehatan lambungmu!',
@@ -119,13 +118,12 @@ class NotificationService {
   static Future<void> scheduleEatingReminder({
     required String title,
     required String body,
-    int secondsDelay = 6, // Default diubah ke 6 agar aman dari limit minimum 5 detik
+    int secondsDelay = 6,
   }) async {
     try {
       bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
       if (!isAllowed) return;
 
-      // Memastikan interval minimal 6 detik untuk menghindari PlatformException
       int finalInterval = secondsDelay < 6 ? 6 : secondsDelay;
 
       await AwesomeNotifications().createNotification(

@@ -13,7 +13,6 @@ class DoctorHomePage extends StatelessWidget {
       backgroundColor: offWhite,
       body: CustomScrollView(
         slivers: [
-          // Elegant Header Section (Emerald Green Theme)
           SliverToBoxAdapter(
             child: Container(
               padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
@@ -64,7 +63,6 @@ class DoctorHomePage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 32),
-                  // Statistics Ringkas (2 Grid Columns)
                   Row(
                     children: [
                       _buildStatCard('Total Pendapatan', 'Rp 12.5M', Icons.payments_rounded, Colors.orange),
@@ -76,8 +74,6 @@ class DoctorHomePage extends StatelessWidget {
               ),
             ),
           ),
-
-          // Main Content Section
           SliverPadding(
             padding: const EdgeInsets.all(24),
             sliver: SliverList(
@@ -86,7 +82,7 @@ class DoctorHomePage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('PEMESANAN TERBARU', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey, letterSpacing: 1.5)),
-                    SizedBox(), // Spacer
+                    SizedBox(),
                   ],
                 ),
                 GestureDetector(
@@ -103,16 +99,12 @@ class DoctorHomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 _buildPendingPatientCard('Budi Santoso', 'Gerd & Maag Akut', '14:30 WIB'),
-                
                 const SizedBox(height: 32),
-
-                // Konsultasi Terdekat
                 const Text('KONSULTASI TERDEKAT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey, letterSpacing: 1.5)),
                 const SizedBox(height: 16),
                 _buildUpcomingConsultationCard('Siti Aminah', '09:00 WIB', 'Telekonsultasi'),
                 _buildUpcomingConsultationCard('Reza Rahadian', '10:30 WIB', 'Tatap Muka'),
-                
-                const SizedBox(height: 120), // Spacious bottom gap
+                const SizedBox(height: 120),
               ]),
             ),
           ),

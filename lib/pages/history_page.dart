@@ -15,7 +15,6 @@ class HistoryPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Elegant Rounded Header (Non-floating)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
@@ -48,7 +47,6 @@ class HistoryPage extends StatelessWidget {
                 ],
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -88,7 +86,7 @@ class HistoryPage extends StatelessWidget {
                     Icons.assignment_outlined,
                     Colors.red,
                   ),
-                  const SizedBox(height: 120), // Space for navigation
+                  const SizedBox(height: 120),
                 ],
               ),
             ),

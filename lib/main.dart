@@ -73,7 +73,7 @@ class _MainNavigationState extends State<MainNavigation> {
     const emeraldGreen = Color(0xFF006D32);
 
     return Scaffold(
-      extendBody: true, // Allows content to flow behind the notch
+      extendBody: true,
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: _pages[_selectedIndex],
@@ -114,13 +114,13 @@ class _MainNavigationState extends State<MainNavigation> {
             color: Colors.white,
             shape: const CircularNotchedRectangle(),
             notchMargin: 10,
-            elevation: 0, // Elevation is handled by the Container's shadow
+            elevation: 0,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: <Widget>[
                 Expanded(child: _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home', emeraldGreen)),
                 Expanded(child: _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Aktivitas', emeraldGreen)),
-                const SizedBox(width: 70), // Sufficient space for the sunken SOS button
+                const SizedBox(width: 70),
                 Expanded(child: _buildNavItem(2, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Riwayat', emeraldGreen)),
                 Expanded(child: _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'Profil', emeraldGreen)),
               ],

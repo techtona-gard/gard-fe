@@ -24,7 +24,6 @@ class HealthPage extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: emeraldGreen),
             ),
             const SizedBox(height: 20),
-            // Placeholder for Graph
             Container(
               height: 200,
               width: double.infinity,
