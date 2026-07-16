@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gard_fe/main.dart';
-import 'package:gard_fe/pages/doctor_verification_page.dart';
+import 'package:gard_fe/pages/doctor_register_page.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = Colors.green.shade700;
-    final secondaryColor = Colors.green.shade50;
+    const emeraldGreen = Color(0xFF006D32);
+    const secondaryColor = Color(0xFFE8F5E9);
 
     return Scaffold(
       backgroundColor: const Color(0xfff8f9fa),
@@ -19,7 +19,6 @@ class LoginPage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo & App Name Card
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(32),
@@ -36,22 +35,21 @@ class LoginPage extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      // App Icon Placeholder
                       Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: secondaryColor,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.health_and_safety, size: 60, color: themeColor),
+                        child: const Icon(Icons.health_and_safety, size: 60, color: emeraldGreen),
                       ),
                       const SizedBox(height: 24),
-                      Text(
+                      const Text(
                         'Gard-Fe',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: themeColor,
+                          color: emeraldGreen,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -62,7 +60,6 @@ class LoginPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 40),
 
-                      // Google Login Button
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -85,7 +82,6 @@ class LoginPage extends StatelessWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Fixed Google Icon using a reliable local icon or standard network icon
                               Image.network(
                                 'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
                                 height: 24,
@@ -114,12 +110,11 @@ class LoginPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 24),
 
-                      // Access Rules
                       _buildAccessRule(
                         icon: Icons.person_outline,
                         title: 'Pengguna Umum',
                         desc: 'Gunakan akun Google untuk memantau kesehatan GERD harian.',
-                        color: themeColor,
+                        color: emeraldGreen,
                       ),
                       const SizedBox(height: 16),
                       _buildAccessRule(
@@ -134,22 +129,17 @@ class LoginPage extends StatelessWidget {
 
                 const SizedBox(height: 32),
                 
-                // Footer
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const DoctorVerificationPage()),
-                    );
-                  },
-                  child: Text(
-                    'Register as a Doctor',
-                    style: TextStyle(
-                      color: themeColor,
-                      fontWeight: FontWeight.bold,
-                      decoration: TextDecoration.underline,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Ingin bergabung sebagai mitra?'),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const DoctorRegisterPage()));
+                      },
+                      child: const Text('Daftar Dokter', style: TextStyle(color: emeraldGreen, fontWeight: FontWeight.bold)),
                     ),
-                  ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 const Text(

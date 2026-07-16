@@ -73,56 +73,59 @@ class _MainNavigationState extends State<MainNavigation> {
     const emeraldGreen = Color(0xFF006D32);
 
     return Scaffold(
+      extendBody: true, // Allows content to flow behind the notch
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: _pages[_selectedIndex],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: Container(
-        height: 68,
-        width: 68,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          if (cameras.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CameraPage(camera: cameras.first)),
+            );
+          }
+        },
+        elevation: 8,
+        backgroundColor: emeraldGreen,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 30),
+      ),
+      bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: emeraldGreen,
-          shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: emeraldGreen.withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            )
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
           ],
         ),
-        child: FloatingActionButton(
-          onPressed: () {
-            if (cameras.isNotEmpty) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CameraPage(camera: cameras.first)),
-              );
-            }
-          },
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          shape: const CircleBorder(),
-          child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 30),
-        ),
-      ),
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 10,
-        color: Colors.white,
-        elevation: 10,
-        height: 75,
-        padding: EdgeInsets.zero,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home', emeraldGreen),
-            _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Aktivitas', emeraldGreen),
-            const SizedBox(width: 48), // Gap for FAB
-            _buildNavItem(2, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Riwayat', emeraldGreen),
-            _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'Profil', emeraldGreen),
-          ],
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+          child: BottomAppBar(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            height: 80,
+            color: Colors.white,
+            shape: const CircularNotchedRectangle(),
+            notchMargin: 10,
+            elevation: 0, // Elevation is handled by the Container's shadow
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: <Widget>[
+                Expanded(child: _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home', emeraldGreen)),
+                Expanded(child: _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Aktivitas', emeraldGreen)),
+                const SizedBox(width: 70), // Sufficient space for the sunken SOS button
+                Expanded(child: _buildNavItem(2, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Riwayat', emeraldGreen)),
+                Expanded(child: _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'Profil', emeraldGreen)),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -134,28 +137,25 @@ class _MainNavigationState extends State<MainNavigation> {
       onTap: () => setState(() => _selectedIndex = index),
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
-      child: SizedBox(
-        width: 65,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isSelected ? activeIcon : icon,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isSelected ? activeIcon : icon,
+            color: isSelected ? activeColor : Colors.grey.shade400,
+            size: 26,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               color: isSelected ? activeColor : Colors.grey.shade400,
-              size: 26,
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? activeColor : Colors.grey.shade400,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

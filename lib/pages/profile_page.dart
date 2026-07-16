@@ -17,47 +17,30 @@ class _ProfilePageState extends State<ProfilePage> {
   String gerdStatus = "Resiko Rendah";
   String email = "brawidya12@gmail.com";
 
-  void _showLogoutMenu(BuildContext context, TapDownDetails details) {
-    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    
-    showMenu(
+  void _handleLogout() {
+    showDialog(
       context: context,
-      position: RelativeRect.fromRect(
-        details.globalPosition & const Size(40, 40),
-        Offset.zero & overlay.size,
+      builder: (context) => AlertDialog(
+        title: const Text('Keluar Akun'),
+        content: const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+                (route) => false,
+              );
+            },
+            child: const Text('Ya, Keluar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      items: [
-        const PopupMenuItem(
-          value: 'profile',
-          child: Row(
-            children: [
-              Icon(Icons.person_outline, size: 20),
-              SizedBox(width: 12),
-              Text('Edit Profile'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'logout',
-          child: Row(
-            children: [
-              Icon(Icons.logout, size: 20, color: Colors.red.shade700),
-              const SizedBox(width: 12),
-              Text('Logout', style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold)),
-            ],
-          ),
-        ),
-      ],
-    ).then((value) {
-      if (value == 'logout') {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-          (route) => false,
-        );
-      }
-    });
+    );
   }
 
   @override
@@ -88,24 +71,15 @@ class _ProfilePageState extends State<ProfilePage> {
                           'Profile',
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
-                        GestureDetector(
-                          onTapDown: (details) => _showLogoutMenu(context, details),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: themeColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'PASIEN',
-                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                                ),
-                                Icon(Icons.arrow_drop_down, color: Colors.white, size: 16),
-                              ],
-                            ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: themeColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'PASIEN',
+                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -235,7 +209,29 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 40),
+              
+              const SizedBox(height: 20),
+
+              // Logout Button at the bottom
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: OutlinedButton.icon(
+                  onPressed: _handleLogout,
+                  icon: const Icon(Icons.logout_rounded, color: Colors.red),
+                  label: const Text(
+                    'KELUAR AKUN',
+                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.red.shade100, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    backgroundColor: Colors.red.shade50.withOpacity(0.3),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 100), // Space for navbar
             ],
           ),
         ),

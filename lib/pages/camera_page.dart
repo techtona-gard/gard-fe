@@ -64,7 +64,7 @@ class _CameraPageState extends State<CameraPage> {
   @override
   Widget build(BuildContext context) {
     const emeraldGreen = Color(0xFF006D32);
-    const neonGreen = Color(0xFF39FF14);
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -74,68 +74,63 @@ class _CameraPageState extends State<CameraPage> {
           if (snapshot.connectionState == ConnectionState.done) {
             return Stack(
               children: [
-                // 1. Camera Preview (Full Screen)
+                // 1. Camera Viewfinder (Fixed 9:16, No Distortion)
                 Positioned.fill(
-                  child: CameraPreview(_controller),
-                ),
-
-                // 2. Translucent Overlay with Cutout Scanner Frame
-                Positioned.fill(
-                  child: ColorFiltered(
-                    colorFilter: ColorFilter.mode(
-                      Colors.black.withOpacity(0.6),
-                      BlendMode.srcOut,
-                    ),
-                    child: Stack(
-                      children: [
-                        Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.black,
-                            backgroundBlendMode: BlendMode.dstOut,
-                          ),
-                        ),
-                        Center(
-                          child: Container(
-                            width: 280,
-                            height: 280,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                        ),
-                      ],
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: size.width,
+                      height: size.width * _controller.value.aspectRatio,
+                      child: CameraPreview(_controller),
                     ),
                   ),
                 ),
 
-                // 3. Esthetic Scanning Frame Border
+                // 2. Blur Overlay (Outside scanning frame)
+                Positioned.fill(
+                  child: ClipPath(
+                    clipper: InvertedSquareClipper(),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                      child: Container(color: Colors.black.withOpacity(0.4)),
+                    ),
+                  ),
+                ),
+
+                // 3. Scanning Frame Border
                 Center(
                   child: Container(
                     width: 280,
                     height: 280,
                     decoration: BoxDecoration(
-                      border: Border.all(color: neonGreen.withOpacity(0.5), width: 1.5),
+                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Stack(
                       children: [
-                        _buildCorner(Alignment.topLeft, neonGreen),
-                        _buildCorner(Alignment.topRight, neonGreen),
-                        _buildCorner(Alignment.bottomLeft, neonGreen),
-                        _buildCorner(Alignment.bottomRight, neonGreen),
+                        _buildCorner(Alignment.topLeft, Colors.greenAccent),
+                        _buildCorner(Alignment.topRight, Colors.greenAccent),
+                        _buildCorner(Alignment.bottomLeft, Colors.greenAccent),
+                        _buildCorner(Alignment.bottomRight, Colors.greenAccent),
                       ],
                     ),
                   ),
                 ),
 
-                // 4. Top Navigation Bar
+                // 4. Top Section (Black Bar with Notch Look)
                 Positioned(
-                  top: 50,
+                  top: 0,
                   left: 0,
                   right: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(30),
+                        bottomRight: Radius.circular(30),
+                      ),
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -145,79 +140,58 @@ class _CameraPageState extends State<CameraPage> {
                         ),
                         const Text(
                           'Pindai Makanan',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(width: 48), // Balancing spacer
+                        const SizedBox(width: 48),
                       ],
                     ),
                   ),
                 ),
 
-                // 5. Bottom Control Bar (Curved White Container)
+                // 5. Bottom Section (Card Tumpuk dengan Lekukan / Notch)
                 Positioned(
                   bottom: 0,
                   left: 0,
                   right: 0,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 40),
-                    decoration: const BoxDecoration(
+                    padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 30),
+                    decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.only(
+                      borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(40),
                         topRight: Radius.circular(40),
                       ),
+                      border: Border.all(color: emeraldGreen.withOpacity(0.5), width: 2),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, -5))
+                      ],
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // Left Placeholder for balance
-                        const SizedBox(width: 48),
+                        const SizedBox(width: 60),
 
-                        // Main Capture Button
+                        // Capture Button
                         GestureDetector(
                           onTap: _takePicture,
                           child: Container(
-                            width: 80,
-                            height: 80,
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
+                            width: 75,
+                            height: 75,
+                            decoration: const BoxDecoration(
+                              color: emeraldGreen,
                               shape: BoxShape.circle,
-                              border: Border.all(color: emeraldGreen.withOpacity(0.2), width: 2),
                             ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: emeraldGreen, width: 4),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: emeraldGreen.withOpacity(0.2),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                  )
-                                ],
-                              ),
-                              child: const Icon(Icons.camera_alt_rounded, color: emeraldGreen, size: 32),
-                            ),
+                            child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 32),
                           ),
                         ),
 
-                        // Flash Toggle Button
+                        // Flash Toggle
                         IconButton(
                           onPressed: _toggleFlash,
-                          icon: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
-                            child: Icon(
-                              _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
-                              key: ValueKey(_isFlashOn),
-                              color: _isFlashOn ? Colors.orangeAccent : Colors.grey.shade400,
-                              size: 28,
-                            ),
+                          icon: Icon(
+                            _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                            color: _isFlashOn ? Colors.orangeAccent : Colors.grey.shade400,
+                            size: 36,
                           ),
                         ),
                       ],
@@ -227,9 +201,7 @@ class _CameraPageState extends State<CameraPage> {
               ],
             );
           } else {
-            return const Center(
-              child: CircularProgressIndicator(color: emeraldGreen),
-            );
+            return const Center(child: CircularProgressIndicator(color: emeraldGreen));
           }
         },
       ),
@@ -237,31 +209,38 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   Widget _buildCorner(Alignment alignment, Color color) {
-    const double cornerSize = 30;
-    const double thickness = 4;
-    
     return Align(
       alignment: alignment,
       child: Container(
-        width: cornerSize,
-        height: cornerSize,
+        width: 30,
+        height: 30,
         decoration: BoxDecoration(
           border: Border(
-            top: (alignment == Alignment.topLeft || alignment == Alignment.topRight)
-                ? BorderSide(color: color, width: thickness)
-                : BorderSide.none,
-            bottom: (alignment == Alignment.bottomLeft || alignment == Alignment.bottomRight)
-                ? BorderSide(color: color, width: thickness)
-                : BorderSide.none,
-            left: (alignment == Alignment.topLeft || alignment == Alignment.bottomLeft)
-                ? BorderSide(color: color, width: thickness)
-                : BorderSide.none,
-            right: (alignment == Alignment.topRight || alignment == Alignment.bottomRight)
-                ? BorderSide(color: color, width: thickness)
-                : BorderSide.none,
+            top: (alignment == Alignment.topLeft || alignment == Alignment.topRight) ? BorderSide(color: color, width: 4) : BorderSide.none,
+            bottom: (alignment == Alignment.bottomLeft || alignment == Alignment.bottomRight) ? BorderSide(color: color, width: 4) : BorderSide.none,
+            left: (alignment == Alignment.topLeft || alignment == Alignment.bottomLeft) ? BorderSide(color: color, width: 4) : BorderSide.none,
+            right: (alignment == Alignment.topRight || alignment == Alignment.bottomRight) ? BorderSide(color: color, width: 4) : BorderSide.none,
           ),
         ),
       ),
     );
   }
+}
+
+class InvertedSquareClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    return Path.combine(
+      PathOperation.difference,
+      Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
+      Path()
+        ..addRRect(RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset(size.width / 2, size.height / 2), width: 280, height: 280),
+          const Radius.circular(30),
+        )),
+    );
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
