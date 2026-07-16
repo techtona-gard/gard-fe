@@ -4,6 +4,8 @@ import 'package:gard_fe/pages/gerdq_page.dart';
 import 'package:gard_fe/pages/health_page.dart';
 import 'package:gard_fe/pages/consultation_page.dart';
 import 'package:gard_fe/pages/education_page.dart';
+import 'package:gard_fe/services/health_connect_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui';
 
 class HomePage extends StatefulWidget {
@@ -16,6 +18,15 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   late AnimationController _sosController;
   bool _isSosHolding = false;
+
+  // ===========================================================================
+  // STATE KHUSUS HEALTH CONNECT
+  // ===========================================================================
+  final HealthService _healthService = HealthService();
+  bool _isLoadingHealth = true;
+  int _steps = 0;
+  double _heartRate = 0;
+  int _sleepMinutes = 0;
 
   @override
   void initState() {
@@ -30,6 +41,90 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           _triggerSos();
         }
       });
+
+    // Panggil fungsi tarik data kesehatan saat halaman dibuka
+    _fetchHealthData();
+  }
+
+  /// Fungsi untuk mengoneksikan Health Connect & mengupdate UI
+  Future<void> _fetchHealthData() async {
+    await _healthService.init();
+
+    // 1. Cek apakah izin sudah diberikan
+    bool hasPermission = await _healthService.hasPermissions();
+
+    // 2. Jika belum ada izin, cek apakah ini pertama kali install/buka
+    if (!hasPermission) {
+      final prefs = await SharedPreferences.getInstance();
+      bool isFirstTime = prefs.getBool('first_time_health_permission') ?? true;
+
+      if (isFirstTime) {
+        // Tampilkan dialog selamat datang & ajakan koneksi Health Connect
+        if (mounted) {
+          await _showHealthConnectWelcomeDialog();
+        }
+
+        // Minta izin ke sistem
+        hasPermission = await _healthService.requestPermissions();
+
+        // Simpan status bahwa kita sudah pernah meminta izin (agar tidak muncul terus jika ditolak)
+        await prefs.setBool('first_time_health_permission', false);
+      }
+    }
+
+    // 3. Jika izin diberikan (atau sudah ada), tarik data summary
+    if (hasPermission) {
+      final summary = await _healthService.getTodaySummary();
+      if (mounted) {
+        setState(() {
+          _steps = summary['steps'] ?? 0;
+          _heartRate = summary['heartRate'] ?? 0;
+          _sleepMinutes = summary['sleepMinutes'] ?? 0;
+          _isLoadingHealth = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() => _isLoadingHealth = false);
+      }
+    }
+  }
+
+  /// Dialog selamat datang khusus untuk Health Connect (UX First Install)
+  Future<void> _showHealthConnectWelcomeDialog() async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.health_and_safety_rounded, color: Color(0xFF006D32)),
+            SizedBox(width: 10),
+            Text('Koneksi Kesehatan', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'Untuk memberikan analisis risiko GERD yang lebih akurat, Gard-Fe ingin terhubung dengan Health Connect untuk memantau aktivitas fisik dan pola tidur Anda.',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Nanti Saja', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF006D32),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Hubungkan Sekarang'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -49,6 +144,22 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
       ),
     );
+  }
+
+  // Helper untuk format display jam tidur (menit -> 0h 0m)
+  String _formatSleep(int minutes) {
+    if (minutes <= 0) return '0h 0m';
+    int hours = minutes ~/ 60;
+    int mins = minutes % 60;
+    return '${hours}h ${mins}m';
+  }
+
+  // Helper untuk format display langkah kaki
+  String _formatSteps(int steps) {
+    if (steps >= 1000) {
+      return '${(steps / 1000).toStringAsFixed(1)}k';
+    }
+    return steps.toString();
   }
 
   @override
@@ -149,10 +260,30 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildWhiteCircleStat('80', 'BPM', Icons.favorite_rounded, Colors.redAccent),
-                      _buildWhiteCircleStat('Normal', 'Stres', Icons.psychology_rounded, Colors.deepPurpleAccent),
-                      _buildWhiteCircleStat('7h 20m', 'Tidur', Icons.bedtime_rounded, Colors.blueAccent),
-                      _buildWhiteCircleStat('4.2k', 'Langkah', Icons.directions_walk_rounded, Colors.orangeAccent),
+                      _buildWhiteCircleStat(
+                        _isLoadingHealth ? '...' : (_heartRate > 0 ? '${_heartRate.toInt()}' : '--'),
+                        'BPM',
+                        Icons.favorite_rounded,
+                        Colors.redAccent,
+                      ),
+                      _buildWhiteCircleStat(
+                        'Normal',
+                        'Stres',
+                        Icons.psychology_rounded,
+                        Colors.deepPurpleAccent,
+                      ),
+                      _buildWhiteCircleStat(
+                        _isLoadingHealth ? '...' : _formatSleep(_sleepMinutes),
+                        'Tidur',
+                        Icons.bedtime_rounded,
+                        Colors.blueAccent,
+                      ),
+                      _buildWhiteCircleStat(
+                        _isLoadingHealth ? '...' : _formatSteps(_steps),
+                        'Langkah',
+                        Icons.directions_walk_rounded,
+                        Colors.orangeAccent,
+                      ),
                     ],
                   ),
                 ),
