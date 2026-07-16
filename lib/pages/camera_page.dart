@@ -74,7 +74,6 @@ class _CameraPageState extends State<CameraPage> {
           if (snapshot.connectionState == ConnectionState.done) {
             return Stack(
               children: [
-                // 1. Camera Viewfinder (Fixed 9:16, No Distortion)
                 Positioned.fill(
                   child: FittedBox(
                     fit: BoxFit.cover,
@@ -85,8 +84,6 @@ class _CameraPageState extends State<CameraPage> {
                     ),
                   ),
                 ),
-
-                // 2. Blur Overlay (Outside scanning frame)
                 Positioned.fill(
                   child: ClipPath(
                     clipper: InvertedSquareClipper(),
@@ -96,8 +93,6 @@ class _CameraPageState extends State<CameraPage> {
                     ),
                   ),
                 ),
-
-                // 3. Scanning Frame Border
                 Center(
                   child: Container(
                     width: 280,
@@ -116,8 +111,6 @@ class _CameraPageState extends State<CameraPage> {
                     ),
                   ),
                 ),
-
-                // 4. Top Section (Black Bar with Notch Look)
                 Positioned(
                   top: 0,
                   left: 0,
@@ -147,8 +140,6 @@ class _CameraPageState extends State<CameraPage> {
                     ),
                   ),
                 ),
-
-                // 5. Bottom Section (Card Tumpuk dengan Lekukan / Notch)
                 Positioned(
                   bottom: 0,
                   left: 0,
@@ -170,8 +161,6 @@ class _CameraPageState extends State<CameraPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         const SizedBox(width: 60),
-
-                        // Capture Button
                         GestureDetector(
                           onTap: _takePicture,
                           child: Container(
@@ -184,8 +173,6 @@ class _CameraPageState extends State<CameraPage> {
                             child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 32),
                           ),
                         ),
-
-                        // Flash Toggle
                         IconButton(
                           onPressed: _toggleFlash,
                           icon: Icon(

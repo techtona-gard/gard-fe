@@ -13,7 +13,6 @@ class _DoctorVerificationPageState extends State<DoctorVerificationPage> {
 
   void _handleSubmit() {
     setState(() => _isSubmitting = true);
-    // Simulate API process
     Future.delayed(const Duration(seconds: 3), () {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
@@ -55,7 +54,6 @@ class _DoctorVerificationPageState extends State<DoctorVerificationPage> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
-                        // For demo purpose, navigate to Doctor Dashboard
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(builder: (context) => const DoctorMainNavigation()),
@@ -88,7 +86,6 @@ class _DoctorVerificationPageState extends State<DoctorVerificationPage> {
       backgroundColor: offWhite,
       body: CustomScrollView(
         slivers: [
-          // Onboarding Header (Inspired by Image 2)
           SliverToBoxAdapter(
             child: Container(
               padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
@@ -123,8 +120,6 @@ class _DoctorVerificationPageState extends State<DoctorVerificationPage> {
               ),
             ),
           ),
-
-          // Main Control Card (Inspired by Image 2 Purple Card)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -159,8 +154,6 @@ class _DoctorVerificationPageState extends State<DoctorVerificationPage> {
               ),
             ),
           ),
-
-          // Status Card (Inspired by Image 2 Yellow Card)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
@@ -197,8 +190,6 @@ class _DoctorVerificationPageState extends State<DoctorVerificationPage> {
               ),
             ),
           ),
-
-          // Upload Section (Inspired by Image 3)
           SliverPadding(
             padding: const EdgeInsets.all(24),
             sliver: SliverToBoxAdapter(
@@ -220,8 +211,6 @@ class _DoctorVerificationPageState extends State<DoctorVerificationPage> {
                       ],
                     ),
                     const SizedBox(height: 32),
-                    
-                    // Upload Placeholder
                     Center(
                       child: Container(
                         padding: const EdgeInsets.all(32),
@@ -240,12 +229,10 @@ class _DoctorVerificationPageState extends State<DoctorVerificationPage> {
                         ),
                       ),
                     ),
-                    
                     const SizedBox(height: 32),
                     _buildInputField('NAMA LENGKAP & GELAR *', 'Dr. Budi Santoso, Sp.PD'),
                     _buildInputField('NO. SURAT TANDA REGISTRASI (STR) *', '1234567890'),
                     _buildInputField('NO. SURAT IZIN PRAKTIK (SIP) *', 'SIP/2024/001'),
-                    
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
@@ -268,7 +255,6 @@ class _DoctorVerificationPageState extends State<DoctorVerificationPage> {
               ),
             ),
           ),
-          
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),

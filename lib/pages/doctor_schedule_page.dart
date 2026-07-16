@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class DoctorSchedulePage extends StatefulWidget {
   const DoctorSchedulePage({super.key});
@@ -8,85 +9,129 @@ class DoctorSchedulePage extends StatefulWidget {
 }
 
 class _DoctorSchedulePageState extends State<DoctorSchedulePage> {
-  int _selectedDateIndex = 2; // Assuming today is Wednesday
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
 
-  final List<Map<String, String>> _dates = [
-    {'day': 'Sen', 'date': '21'},
-    {'day': 'Sel', 'date': '22'},
-    {'day': 'Rab', 'date': '23'},
-    {'day': 'Kam', 'date': '24'},
-    {'day': 'Jum', 'date': '25'},
-    {'day': 'Sab', 'date': '26'},
-    {'day': 'Min', 'date': '27'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _selectedDay = _focusedDay;
+  }
 
   @override
   Widget build(BuildContext context) {
     const emeraldGreen = Color(0xFF006D32);
+    const bgColor = Color(0xFFF8F9FA);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text('Jadwal Praktik', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Jadwal Praktik', 
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          // Horizontal Calendar Section
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: _dates.asMap().entries.map((entry) {
-                  int idx = entry.key;
-                  var item = entry.value;
-                  bool isSelected = _selectedDateIndex == idx;
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedDateIndex = idx),
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 12),
-                      width: 60,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: isSelected ? emeraldGreen : Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: isSelected ? [BoxShadow(color: emeraldGreen.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))] : [],
-                      ),
-                      child: Column(
-                        children: [
-                          Text(item['day']!, style: TextStyle(color: isSelected ? Colors.white70 : Colors.grey, fontSize: 12)),
-                          const SizedBox(height: 8),
-                          Text(item['date']!, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
-                        ],
-                      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
                     ),
-                  );
-                }).toList(),
+                  ],
+                ),
+                padding: const EdgeInsets.only(bottom: 16),
+                child: TableCalendar(
+                  firstDay: DateTime.utc(2020, 1, 1),
+                  lastDay: DateTime.utc(2030, 12, 31),
+                  focusedDay: _focusedDay,
+                  selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                  onDaySelected: (selectedDay, focusedDay) {
+                    setState(() {
+                      _selectedDay = selectedDay;
+                      _focusedDay = focusedDay;
+                    });
+                  },
+                  onPageChanged: (focusedDay) {
+                    _focusedDay = focusedDay;
+                  },
+                  rowHeight: 52,
+                  calendarStyle: CalendarStyle(
+                    todayDecoration: BoxDecoration(
+                      color: emeraldGreen.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    todayTextStyle: const TextStyle(
+                      color: emeraldGreen, 
+                      fontWeight: FontWeight.bold
+                    ),
+                    selectedDecoration: const BoxDecoration(
+                      color: emeraldGreen,
+                      shape: BoxShape.circle,
+                    ),
+                    selectedTextStyle: const TextStyle(
+                      color: Colors.white, 
+                      fontWeight: FontWeight.bold
+                    ),
+                    outsideDaysVisible: false,
+                    defaultTextStyle: const TextStyle(color: Colors.black87),
+                    weekendTextStyle: const TextStyle(color: Colors.black87),
+                  ),
+                  headerStyle: const HeaderStyle(
+                    formatButtonVisible: false,
+                    titleCentered: true,
+                    titleTextStyle: TextStyle(
+                      fontWeight: FontWeight.bold, 
+                      fontSize: 16,
+                      color: Colors.black87
+                    ),
+                    headerPadding: EdgeInsets.symmetric(vertical: 16),
+                    leftChevronIcon: Icon(Icons.chevron_left_rounded, color: emeraldGreen),
+                    rightChevronIcon: Icon(Icons.chevron_right_rounded, color: emeraldGreen),
+                  ),
+                  daysOfWeekStyle: const DaysOfWeekStyle(
+                    weekdayStyle: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold, fontSize: 12),
+                    weekendStyle: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'DAFTAR JANJI TEMU',
+                    style: TextStyle(
+                      fontSize: 12, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.black38, 
+                      letterSpacing: 1.2
+                    ),
+                  ),
+                  Icon(Icons.tune_rounded, size: 20, color: Colors.grey.shade400),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildScheduleItem('09:00', 'Siti Aminah', 'Telekonsultasi', true),
+              _buildScheduleItem('10:30', 'Reza Rahadian', 'Tatap Muka', true),
+              _buildScheduleItem('13:00', 'Wulan Sari', 'Telekonsultasi', false),
+              _buildScheduleItem('15:00', 'Ahmad Dani', 'Tatap Muka', false),
+              const SizedBox(height: 100),
+            ],
           ),
-
-          // Timeline / Appointments Section
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                const Text('DAFTAR JANJI TEMU', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey, letterSpacing: 1.2)),
-                const SizedBox(height: 20),
-                _buildScheduleItem('09:00 - 09:30', 'Siti Aminah', 'Telekonsultasi', true),
-                _buildScheduleItem('10:30 - 11:00', 'Reza Rahadian', 'Tatap Muka', true),
-                _buildScheduleItem('13:00 - 13:30', 'Wulan Sari', 'Telekonsultasi', false),
-                _buildScheduleItem('15:00 - 15:30', 'Ahmad Dani', 'Tatap Muka', false),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -99,38 +144,57 @@ class _DoctorSchedulePageState extends State<DoctorSchedulePage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
       child: Row(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(time, style: const TextStyle(fontWeight: FontWeight.bold, color: emeraldGreen)),
-              const SizedBox(height: 4),
-              Text(type, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            ],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: emeraldGreen.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              time,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold, 
+                color: emeraldGreen,
+                fontSize: 14
+              ),
+            ),
           ),
-          const SizedBox(width: 24),
+          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(patient, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  patient,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 16,
+                    color: Color(0xFF2D3142)
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(isCompleted ? Icons.check_circle_rounded : Icons.pending_actions_rounded, 
-                      size: 14, color: isCompleted ? emeraldGreen : Colors.orange),
-                    const SizedBox(width: 4),
-                    Text(isCompleted ? 'Selesai' : 'Mendatang', 
-                      style: TextStyle(color: isCompleted ? emeraldGreen : Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
-                  ],
+                Text(
+                  type,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+          Icon(
+            isCompleted ? Icons.check_circle_rounded : Icons.arrow_forward_ios_rounded,
+            color: isCompleted ? emeraldGreen : Colors.grey.shade300,
+            size: isCompleted ? 24 : 16,
+          ),
         ],
       ),
     );

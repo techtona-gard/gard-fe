@@ -24,7 +24,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
       
       _scrollToBottom();
 
-      // GARD AI Logic
       Future.delayed(const Duration(seconds: 1), () {
         if (!mounted) return;
         setState(() {
@@ -157,7 +156,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
             ),
           ),
           
-          // GARD Trigger & Template Pertanyaan (Horizontal Chips)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: SingleChildScrollView(
@@ -174,7 +172,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
             ),
           ),
 
-          // Bottom Chat Bar
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
             decoration: const BoxDecoration(

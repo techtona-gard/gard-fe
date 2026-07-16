@@ -55,7 +55,6 @@ class _ProfilePageState extends State<ProfilePage> {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              // Profile Header Card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -119,10 +118,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Health Information Card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -161,10 +157,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // GerdQ Check Card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -209,10 +202,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
-              
               const SizedBox(height: 20),
-
-              // Logout Button at the bottom
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -230,8 +220,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 100), // Space for navbar
+              const SizedBox(height: 100),
             ],
           ),
         ),

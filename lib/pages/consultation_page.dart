@@ -53,7 +53,6 @@ class ConsultationPage extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: () {
-              // Action: Go to Consultation History
             },
             icon: const Icon(Icons.history_rounded, color: emeraldGreen),
           ),
@@ -62,7 +61,6 @@ class ConsultationPage extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Filter Section
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -83,17 +81,13 @@ class ConsultationPage extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                // Active Booking Card
                 _buildActiveBookingCard(emeraldGreen),
                 const SizedBox(height: 24),
-
                 const Text(
                   'Rekomendasi Spesialis GERD',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87),
                 ),
                 const SizedBox(height: 16),
-
-                // Doctors List
                 ..._doctors.map((doctor) => _buildDoctorCard(doctor, emeraldGreen)).toList(),
               ],
             ),

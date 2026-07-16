@@ -51,7 +51,6 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              // Profile Header Card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -104,10 +103,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Professional Information Card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -138,10 +134,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 32),
-
-              // Logout Button
               SizedBox(
                 width: double.infinity,
                 height: 56,
