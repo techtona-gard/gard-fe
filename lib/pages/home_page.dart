@@ -173,7 +173,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         children: [
           CustomScrollView(
             slivers: [
-              // Elegant Header
               SliverToBoxAdapter(
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
@@ -216,7 +215,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         ],
                       ),
                       const SizedBox(height: 32),
-                      // Glassmorphism Status Card
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: BackdropFilter(
@@ -256,12 +254,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                 ),
               ),
-
-              // ===============================================================
-              // CIRCLE HEALTH STATS (DARI HEALTH CONNECT)
-              // ===============================================================
               SliverPadding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                 sliver: SliverToBoxAdapter(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -294,23 +288,31 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                 ),
               ),
-
-              // Main Services Grid
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('LAYANAN UTAMA', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54, letterSpacing: 1.5)),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 48),
+                      const Text(
+                        'LAYANAN UTAMA', 
+                        style: TextStyle(
+                          fontSize: 12, 
+                          fontWeight: FontWeight.bold, 
+                          color: Colors.black54, 
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                       GridView.count(
+                        padding: EdgeInsets.zero,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         crossAxisCount: 4,
                         mainAxisSpacing: 24,
                         crossAxisSpacing: 12,
-                        childAspectRatio: 0.8,
+                        childAspectRatio: 0.85,
                         children: [
                           _buildServiceItem('Kesehatan', Icons.insights_rounded, emeraldGreen, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HealthPage()))),
                           _buildServiceItem('Konsultasi', Icons.forum_rounded, Colors.blue, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsultationPage()))),
@@ -329,8 +331,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               const SliverToBoxAdapter(child: SizedBox(height: 140)),
             ],
           ),
-
-          // White Floating SOS Button
           Positioned(
             bottom: 110,
             right: 20,
