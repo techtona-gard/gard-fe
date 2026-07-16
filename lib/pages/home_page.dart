@@ -62,7 +62,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         children: [
           CustomScrollView(
             slivers: [
-              // Elegant Header
               SliverToBoxAdapter(
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
@@ -105,7 +104,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         ],
                       ),
                       const SizedBox(height: 32),
-                      // Glassmorphism Status Card
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: BackdropFilter(
@@ -145,8 +143,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                 ),
               ),
-
-              // Circle Health Stats
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                 sliver: SliverToBoxAdapter(
@@ -161,15 +157,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                 ),
               ),
-
-              // Main Services Grid
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 48), // Spacious gap from health stats
+                      const SizedBox(height: 48),
                       const Text(
                         'LAYANAN UTAMA', 
                         style: TextStyle(
@@ -179,7 +173,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                           letterSpacing: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 24), // Ideal gap for clean hierarchy
+                      const SizedBox(height: 24),
                       GridView.count(
                         padding: EdgeInsets.zero,
                         shrinkWrap: true,
@@ -203,13 +197,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 140)), // Increased space for navbar + SOS button
+              const SliverToBoxAdapter(child: SizedBox(height: 140)),
             ],
           ),
-
-          // White Floating SOS Button (Adjusted position and size)
           Positioned(
-            bottom: 110, // Lifted above the navbar (which is ~80px)
+            bottom: 110,
             right: 20,
             child: GestureDetector(
               onLongPressStart: (_) {
@@ -224,7 +216,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 alignment: Alignment.center,
                 children: [
                   SizedBox(
-                    width: 65, // Standard mobile float bubble size
+                    width: 65,
                     height: 65,
                     child: CircularProgressIndicator(
                       value: _sosController.value,
@@ -234,7 +226,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     ),
                   ),
                   Container(
-                    width: 54, // Internal button size
+                    width: 54,
                     height: 54,
                     decoration: BoxDecoration(
                       color: Colors.white,
