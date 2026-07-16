@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class ChatbotPage extends StatefulWidget {
   const ChatbotPage({super.key});
@@ -73,9 +74,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildUploadOption(Icons.camera_alt_rounded, 'Kamera', const Color(0xFF006D32)),
-                _buildUploadOption(Icons.photo_library_rounded, 'Galeri', Colors.blue),
-                _buildUploadOption(Icons.description_rounded, 'Dokumen', Colors.orange),
+                _buildUploadOption(Icons.camera_alt_rounded, 'Kamera', AppColors.primary),
+                _buildUploadOption(Icons.photo_library_rounded, 'Galeri', AppColors.darkAccent),
+                _buildUploadOption(Icons.description_rounded, 'Dokumen', AppColors.warning),
               ],
             ),
             const SizedBox(height: 16),
@@ -104,15 +105,15 @@ class _ChatbotPageState extends State<ChatbotPage> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
-    const offWhite = Color(0xFFF8F9FA);
-
     return Scaffold(
-      backgroundColor: offWhite,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('GARD AI Assistant', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+        ),
+        title: const Text('GARD AI Assistant',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
+        foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
@@ -133,20 +134,20 @@ class _ChatbotPageState extends State<ChatbotPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                     constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                     decoration: BoxDecoration(
-                      color: isBot ? Colors.white : emeraldGreen,
+                      color: isBot ? AppColors.card : AppColors.primary,
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(20),
                         topRight: const Radius.circular(20),
                         bottomLeft: Radius.circular(isBot ? 4 : 20),
                         bottomRight: Radius.circular(isBot ? 20 : 4),
                       ),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
                     ),
                     child: Text(
                       msg['text']!,
                       style: TextStyle(
-                        color: isBot ? const Color(0xFF2D3142) : Colors.white,
-                        fontSize: 15,
+                        color: isBot ? AppColors.textPrimary : Colors.white,
+                        fontSize: 14,
                         height: 1.5,
                       ),
                     ),
@@ -164,9 +165,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
               physics: const BouncingScrollPhysics(),
               child: Row(
                 children: [
-                  _buildQuickTemplate('🚨', 'Asam Lambung Kambuh', emeraldGreen),
-                  _buildQuickTemplate('🥗', 'Rekomendasi Menu', emeraldGreen),
-                  _buildQuickTemplate('💊', 'Info Obat Lambung', emeraldGreen),
+                  _buildQuickTemplate('🚨', 'Asam Lambung Kambuh', AppColors.primary),
+                  _buildQuickTemplate('🥗', 'Rekomendasi Menu', AppColors.primary),
+                  _buildQuickTemplate('💊', 'Info Obat Lambung', AppColors.primary),
                 ],
               ),
             ),
@@ -174,10 +175,10 @@ class _ChatbotPageState extends State<ChatbotPage> {
 
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))],
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -2))],
             ),
             child: Row(
               children: [
@@ -185,20 +186,21 @@ class _ChatbotPageState extends State<ChatbotPage> {
                   onTap: _showUploadMenu,
                   child: Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: offWhite, borderRadius: BorderRadius.circular(15)),
-                    child: const Icon(Icons.add_rounded, color: emeraldGreen, size: 26),
+                    decoration: BoxDecoration(color: AppColors.softAccent, borderRadius: BorderRadius.circular(14)),
+                    child: const Icon(Icons.add_rounded, color: AppColors.primary, size: 24),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(color: offWhite, borderRadius: BorderRadius.circular(20)),
+                    decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.softAccent)),
                     child: TextField(
                       controller: _chatController,
                       decoration: const InputDecoration(
                         hintText: 'Ketik pesan Anda...',
-                        hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
+                        hintStyle: TextStyle(fontSize: 13, color: AppColors.textHint),
                         border: InputBorder.none,
                       ),
                       onSubmitted: (_) => _sendMessage(),
@@ -210,8 +212,8 @@ class _ChatbotPageState extends State<ChatbotPage> {
                   onTap: () => _sendMessage(),
                   child: Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(color: emeraldGreen, shape: BoxShape.circle),
-                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
+                    decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
                   ),
                 ),
               ],

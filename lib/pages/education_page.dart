@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class EducationPage extends StatelessWidget {
   const EducationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -39,8 +39,8 @@ class EducationPage extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: const Color(0xFF006D32).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: const Color(0xFF006D32)),
+            decoration: BoxDecoration(color: AppColors.doctorPrimary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: AppColors.doctorPrimary),
           ),
           const SizedBox(width: 20),
           Expanded(

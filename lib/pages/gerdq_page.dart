@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class GerdQPage extends StatefulWidget {
   const GerdQPage({super.key});
@@ -90,7 +91,7 @@ class _GerdQPageState extends State<GerdQPage> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
+    const emeraldGreen = AppColors.doctorPrimary;
     const offWhite = Color(0xFFF8F9FA);
 
     return Scaffold(
@@ -330,7 +331,7 @@ class GerdQResultPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
+    const emeraldGreen = AppColors.doctorPrimary;
     const offWhite = Color(0xFFF8F9FA);
     bool isHighRisk = score >= 8;
 

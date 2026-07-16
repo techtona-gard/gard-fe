@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:gard_fe/pages/doctor_recent_bookings_page.dart';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class DoctorHomePage extends StatelessWidget {
   const DoctorHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
+    const emeraldGreen = AppColors.doctorPrimary;
     const offWhite = Color(0xFFF8F9FA);
 
     return Scaffold(
@@ -141,7 +142,7 @@ class DoctorHomePage extends StatelessWidget {
   }
 
   Widget _buildPendingPatientCard(String name, String diagnosis, String time) {
-    const emeraldGreen = Color(0xFF006D32);
+    const emeraldGreen = AppColors.doctorPrimary;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -223,7 +224,7 @@ class DoctorHomePage extends StatelessWidget {
             decoration: BoxDecoration(color: const Color(0xFFF1F4F9), borderRadius: BorderRadius.circular(12)),
             child: Icon(
               type == 'Telekonsultasi' ? Icons.videocam_rounded : Icons.location_on_rounded, 
-              color: const Color(0xFF006D32),
+              color: AppColors.doctorPrimary,
               size: 20,
             ),
           ),

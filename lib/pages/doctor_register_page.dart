@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gard_fe/pages/doctor_verification_page.dart';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class DoctorRegisterPage extends StatefulWidget {
   const DoctorRegisterPage({super.key});
@@ -13,7 +14,7 @@ class _DoctorRegisterPageState extends State<DoctorRegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
+    const emeraldGreen = AppColors.doctorPrimary;
     const offWhite = Color(0xFFF8F9FA);
 
     return Scaffold(

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class DoctorRecentBookingsPage extends StatelessWidget {
   const DoctorRecentBookingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
     return Scaffold(
+
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text('Semua Pemesanan', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -27,7 +28,7 @@ class DoctorRecentBookingsPage extends StatelessWidget {
   }
 
   Widget _buildPatientActionCard(String name, String diagnosis, String time) {
-    const emeraldGreen = Color(0xFF006D32);
+    const emeraldGreen = AppColors.doctorPrimary;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

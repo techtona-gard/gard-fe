@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:gard_fe/services/notification_service.dart';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class ActivityPage extends StatefulWidget {
   const ActivityPage({super.key});
@@ -21,13 +22,13 @@ class _ActivityPageState extends State<ActivityPage> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
-    const forestGreen = Color(0xFF004D21);
-    const softGreenTint = Color(0xFFE8F5E9);
-    const bgColor = Color(0xFFF8F9FA);
+    const primaryGard = AppColors.primary;
+    const darkGard = AppColors.darkAccent;
+    const softGardTint = AppColors.softAccent;
+    const bgGard = AppColors.background;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: bgGard,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,7 +40,7 @@ class _ActivityPageState extends State<ActivityPage> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [emeraldGreen, forestGreen],
+                  colors: [primaryGard, darkGard],
                 ),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(40),
@@ -76,7 +77,7 @@ class _ActivityPageState extends State<ActivityPage> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
+                          color: darkGard.withOpacity(0.03),
                           blurRadius: 15,
                           offset: const Offset(0, 4),
                         ),
@@ -99,13 +100,13 @@ class _ActivityPageState extends State<ActivityPage> {
                       },
                       calendarStyle: CalendarStyle(
                         todayDecoration: BoxDecoration(
-                          color: emeraldGreen.withOpacity(0.1),
+                          color: primaryGard.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         todayTextStyle: const TextStyle(
-                            color: emeraldGreen, fontWeight: FontWeight.bold),
+                            color: primaryGard, fontWeight: FontWeight.bold),
                         selectedDecoration: const BoxDecoration(
-                          color: emeraldGreen,
+                          color: primaryGard,
                           shape: BoxShape.circle,
                         ),
                         selectedTextStyle: const TextStyle(
@@ -122,9 +123,9 @@ class _ActivityPageState extends State<ActivityPage> {
                             TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         headerPadding: EdgeInsets.symmetric(vertical: 16),
                         leftChevronIcon:
-                            Icon(Icons.chevron_left, color: emeraldGreen),
+                            Icon(Icons.chevron_left, color: primaryGard),
                         rightChevronIcon:
-                            Icon(Icons.chevron_right, color: emeraldGreen),
+                            Icon(Icons.chevron_right, color: primaryGard),
                       ),
                       daysOfWeekStyle: const DaysOfWeekStyle(
                         weekdayStyle: TextStyle(
@@ -156,8 +157,8 @@ class _ActivityPageState extends State<ActivityPage> {
                     'Sarapan Pagi',
                     '07:30',
                     Icons.wb_sunny_outlined,
-                    emeraldGreen,
-                    softGreenTint,
+                    primaryGard,
+                    softGardTint,
                     () => NotificationService.scheduleEatingReminder(
                       title: 'Waktunya Sarapan! 🥣',
                       body: 'Jangan lupa sarapan sehat untuk menjaga lambungmu.',
@@ -168,8 +169,8 @@ class _ActivityPageState extends State<ActivityPage> {
                     'Makan Siang',
                     '12:30',
                     Icons.restaurant_rounded,
-                    emeraldGreen,
-                    softGreenTint,
+                    primaryGard,
+                    softGardTint,
                     () => NotificationService.scheduleEatingReminder(
                       title: 'Waktunya Makan Siang! 🥗',
                       body: 'Sudah jam 12:30, yuk makan siang tepat waktu.',
@@ -180,8 +181,8 @@ class _ActivityPageState extends State<ActivityPage> {
                     'Makan Malam',
                     '19:00',
                     Icons.nightlight_round_rounded,
-                    emeraldGreen,
-                    softGreenTint,
+                    primaryGard,
+                    softGardTint,
                     () => NotificationService.scheduleEatingReminder(
                       title: 'Waktunya Makan Malam! 🍲',
                       body: 'Jangan makan terlalu malam ya agar GERD tidak kambuh.',

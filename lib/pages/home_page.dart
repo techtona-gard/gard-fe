@@ -4,9 +4,11 @@ import 'package:gard_fe/pages/gerdq_page.dart';
 import 'package:gard_fe/pages/health_page.dart';
 import 'package:gard_fe/pages/consultation_page.dart';
 import 'package:gard_fe/pages/education_page.dart';
-import 'package:gard_fe/services/health_connect_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'dart:ui';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,112 +21,21 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   late AnimationController _sosController;
   bool _isSosHolding = false;
 
-  // ===========================================================================
-  // STATE KHUSUS HEALTH CONNECT
-  // ===========================================================================
-  final HealthService _healthService = HealthService();
-  bool _isLoadingHealth = true;
-  int _steps = 0;
-  double _heartRate = 0;
-  int _sleepMinutes = 0;
-
   @override
   void initState() {
     super.initState();
     _sosController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
-    )..addListener(() {
+    )
+      ..addListener(() {
         setState(() {});
-      })..addStatusListener((status) {
+      })
+      ..addStatusListener((status) {
         if (status == AnimationStatus.completed) {
           _triggerSos();
         }
       });
-
-    // Panggil fungsi tarik data kesehatan saat halaman dibuka
-    _fetchHealthData();
-  }
-
-  /// Fungsi untuk mengoneksikan Health Connect & mengupdate UI
-  Future<void> _fetchHealthData() async {
-    await _healthService.init();
-
-    // 1. Cek apakah izin sudah diberikan
-    bool hasPermission = await _healthService.hasPermissions();
-
-    // 2. Jika belum ada izin, cek apakah ini pertama kali install/buka
-    if (!hasPermission) {
-      final prefs = await SharedPreferences.getInstance();
-      bool isFirstTime = prefs.getBool('first_time_health_permission') ?? true;
-
-      if (isFirstTime) {
-        // Tampilkan dialog selamat datang & ajakan koneksi Health Connect
-        if (mounted) {
-          await _showHealthConnectWelcomeDialog();
-        }
-
-        // Minta izin ke sistem
-        hasPermission = await _healthService.requestPermissions();
-
-        // Simpan status bahwa kita sudah pernah meminta izin (agar tidak muncul terus jika ditolak)
-        await prefs.setBool('first_time_health_permission', false);
-      }
-    }
-
-    // 3. Jika izin diberikan (atau sudah ada), tarik data summary
-    if (hasPermission) {
-      final summary = await _healthService.getTodaySummary();
-      if (mounted) {
-        setState(() {
-          _steps = summary['steps'] ?? 0;
-          _heartRate = summary['heartRate'] ?? 0;
-          _sleepMinutes = summary['sleepMinutes'] ?? 0;
-          _isLoadingHealth = false;
-        });
-      }
-    } else {
-      if (mounted) {
-        setState(() => _isLoadingHealth = false);
-      }
-    }
-  }
-
-  /// Dialog selamat datang khusus untuk Health Connect (UX First Install)
-  Future<void> _showHealthConnectWelcomeDialog() async {
-    return showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.health_and_safety_rounded, color: Color(0xFF006D32)),
-            SizedBox(width: 10),
-            Text('Koneksi Kesehatan', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: const Text(
-          'Untuk memberikan analisis risiko GERD yang lebih akurat, Gard-Fe ingin terhubung dengan Health Connect untuk memantau aktivitas fisik dan pola tidur Anda.',
-          style: TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Nanti Saja', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF006D32),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Hubungkan Sekarang'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -136,52 +47,71 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   void _triggerSos() {
     setState(() => _isSosHolding = false);
     _sosController.reset();
+    _sendFonnteWhatsApp();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('SOS TERKIRIM!', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF006D32))),
-        content: const Text('Bantuan medis darurat sedang dalam perjalanan. Lokasi Anda telah dibagikan.'),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('SOS TERKIRIM!',
+            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+        content:
+            const Text('Bantuan medis darurat sedang dalam perjalanan. Pihak terkait telah dihubungi otomatis.'),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('OK'),
+          )
+        ],
       ),
     );
   }
 
-  // Helper untuk format display jam tidur (menit -> 0h 0m)
-  String _formatSleep(int minutes) {
-    if (minutes <= 0) return '0h 0m';
-    int hours = minutes ~/ 60;
-    int mins = minutes % 60;
-    return '${hours}h ${mins}m';
-  }
+  void _sendFonnteWhatsApp() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      const String token = 'ZV8uTKHBBwpK69p6MU4V';
+      const String targetNumber = '081272733891';
+      final String message = '🚨 SOS DARURAT!\n\n'
+          'Pengguna GARD *Brawidya Dharma* terdeteksi membutuhkan bantuan medis segera akibat serangan gejala lambung/GERD akut.\n\n'
+          '📍 Lokasi Terkini:\n'
+          'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}\n\n'
+          '📋 Ringkasan Rekam Medis:\n'
+          '- 16 Juli: Gejala GERD (Sedang)\n'
+          '- 14 Juli: Konsultasi dr. Andi (Sp.PD)\n'
+          '- 10 Juli: GerdQ (Resiko Tinggi)';
 
-  // Helper untuk format display langkah kaki
-  String _formatSteps(int steps) {
-    if (steps >= 1000) {
-      return '${(steps / 1000).toStringAsFixed(1)}k';
+      final response = await http.post(
+        Uri.parse('https://api.fonnte.com/send'),
+        headers: {'Authorization': token},
+        body: {'target': targetNumber, 'message': message, 'countryCode': '62'},
+      ).timeout(const Duration(seconds: 15));
+      debugPrint('Fonnte Response: ${response.body}');
+    } catch (e) {
+      debugPrint('Error sending SOS via Fonnte: $e');
     }
-    return steps.toString();
   }
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
-    const forestGreen = Color(0xFF004D21);
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           CustomScrollView(
             slivers: [
+              // ── Header Section ─────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
+                  padding: const EdgeInsets.fromLTRB(24, 56, 24, 40),
                   decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [emeraldGreen, forestGreen],
-                    ),
+                    gradient: AppColors.primaryGradient,
                     borderRadius: BorderRadius.only(
                       bottomLeft: Radius.circular(40),
                       bottomRight: Radius.circular(40),
@@ -189,60 +119,128 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                   child: Column(
                     children: [
+                      // ── Top Bar ──────────────────────────────────────────
                       Row(
                         children: [
+                          // Avatar dengan logo_icon
                           Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                            child: const CircleAvatar(
-                              radius: 28,
-                              backgroundImage: NetworkImage('https://i.pravatar.cc/300'),
+                            padding: const EdgeInsets.all(2.5),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.25),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
+                            ),
+                            child: CircleAvatar(
+                              radius: 24,
+                              backgroundColor: AppColors.softAccent,
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/images/logo_icon.png',
+                                  width: 36,
+                                  height: 36,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Selamat Datang,', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                              Text('Brawidya Dharma', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                            ],
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Selamat Datang,',
+                                    style: TextStyle(color: Colors.white60, fontSize: 13)),
+                                Text('Brawidya Dharma',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold)),
+                              ],
+                            ),
                           ),
-                          const Spacer(),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 28),
+                          // Notif dengan logo_icon sebagai badge
+                          Stack(
+                            children: [
+                              IconButton(
+                                onPressed: () {},
+                                icon: const Icon(Icons.notifications_none_rounded,
+                                    color: Colors.white, size: 28),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFD1E8D0),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: 32),
+
+                      const SizedBox(height: 28),
+
+                      // ── Status Card ────────────────────────────────────────
                       ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                           child: Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withOpacity(0.2)),
+                              border: Border.all(color: Colors.white.withOpacity(0.25)),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Column(
+                                Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Status Risiko GERD', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                                    SizedBox(height: 4),
-                                    Text('RENDAH', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                                    const Text('Status Risiko GERD',
+                                        style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          margin: const EdgeInsets.only(right: 8),
+                                          decoration: const BoxDecoration(
+                                            color: AppColors.softAccent,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const Text('RENDAH',
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
                                   ],
                                 ),
                                 GestureDetector(
-                                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const GerdQPage())),
+                                  onTap: () => Navigator.push(context,
+                                      MaterialPageRoute(builder: (context) => const GerdQPage())),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                                    child: const Text('Cek Ulang', style: TextStyle(color: emeraldGreen, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: const Text('Cek Ulang',
+                                        style: TextStyle(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12)),
                                   ),
                                 ),
                               ],
@@ -254,83 +252,87 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                 ),
               ),
+
+              // ── Quick Stats ────────────────────────────────────────────────
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                 sliver: SliverToBoxAdapter(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildWhiteCircleStat(
-                        _isLoadingHealth ? '...' : (_heartRate > 0 ? '${_heartRate.toInt()}' : '--'),
-                        'BPM',
-                        Icons.favorite_rounded,
-                        Colors.redAccent,
-                      ),
-                      _buildWhiteCircleStat(
-                        'Normal',
-                        'Stres',
-                        Icons.psychology_rounded,
-                        Colors.deepPurpleAccent,
-                      ),
-                      _buildWhiteCircleStat(
-                        _isLoadingHealth ? '...' : _formatSleep(_sleepMinutes),
-                        'Tidur',
-                        Icons.bedtime_rounded,
-                        Colors.blueAccent,
-                      ),
-                      _buildWhiteCircleStat(
-                        _isLoadingHealth ? '...' : _formatSteps(_steps),
-                        'Langkah',
-                        Icons.directions_walk_rounded,
-                        Colors.orangeAccent,
-                      ),
+                      _buildStatCard('80', 'BPM', Icons.favorite_rounded, Colors.redAccent),
+                      _buildStatCard('Normal', 'Stres', Icons.psychology_rounded, AppColors.midTeal),
+                      _buildStatCard('7h 20m', 'Tidur', Icons.bedtime_rounded, AppColors.primary),
+                      _buildStatCard('4.2k', 'Langkah', Icons.directions_walk_rounded, const Color(0xFFE67E22)),
                     ],
                   ),
                 ),
               ),
+
+              // ── Layanan Utama ─────────────────────────────────────────────
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 48),
-                      const Text(
-                        'LAYANAN UTAMA', 
-                        style: TextStyle(
-                          fontSize: 12, 
-                          fontWeight: FontWeight.bold, 
-                          color: Colors.black54, 
-                          letterSpacing: 1.5,
-                        ),
+                      const SizedBox(height: 36),
+                      Row(
+                        children: [
+                          Container(
+                            width: 3,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'LAYANAN UTAMA',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textSecondary,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                       GridView.count(
                         padding: EdgeInsets.zero,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         crossAxisCount: 4,
-                        mainAxisSpacing: 24,
+                        mainAxisSpacing: 20,
                         crossAxisSpacing: 12,
-                        childAspectRatio: 0.85,
+                        childAspectRatio: 0.78,
                         children: [
-                          _buildServiceItem('Kesehatan', Icons.insights_rounded, emeraldGreen, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HealthPage()))),
-                          _buildServiceItem('Konsultasi', Icons.forum_rounded, Colors.blue, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsultationPage()))),
-                          _buildServiceItem('Edukasi', Icons.auto_stories_rounded, Colors.orange, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const EducationPage()))),
-                          _buildServiceItem('Chatbot', Icons.smart_toy_rounded, Colors.purple, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatbotPage()))),
-                          _buildServiceItem('Apotek', Icons.local_pharmacy_rounded, Colors.indigo),
-                          _buildServiceItem('Nutrisi', Icons.restaurant_rounded, Colors.red),
-                          _buildServiceItem('Komunitas', Icons.groups_rounded, Colors.teal),
-                          _buildServiceItem('Lainnya', Icons.grid_view_rounded, Colors.grey),
+                          _buildServiceItem('Kesehatan', Icons.add_circle_outline_rounded,
+                              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HealthPage()))),
+                          _buildServiceItem('Konsultasi', Icons.person_search_rounded,
+                              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsultationPage()))),
+                          _buildServiceItem('Edukasi', Icons.auto_stories_outlined,
+                              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const EducationPage()))),
+                          _buildServiceItem('Chatbot', Icons.chat_bubble_outline_rounded,
+                              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatbotPage()))),
+                          _buildServiceItem('Apotek', Icons.local_pharmacy_outlined),
+                          _buildServiceItem('Nutrisi', Icons.restaurant_menu_rounded),
+                          _buildServiceItem('Komunitas', Icons.groups_2_outlined),
+                          _buildServiceItem('Lainnya', Icons.grid_view_rounded),
                         ],
                       ),
                     ],
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 140)),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 160)),
             ],
           ),
+
+          // ── SOS Button ────────────────────────────────────────────────────
           Positioned(
             bottom: 110,
             right: 20,
@@ -347,37 +349,40 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 alignment: Alignment.center,
                 children: [
                   SizedBox(
-                    width: 65,
-                    height: 65,
+                    width: 68,
+                    height: 68,
                     child: CircularProgressIndicator(
                       value: _sosController.value,
                       strokeWidth: 3,
-                      backgroundColor: emeraldGreen.withOpacity(0.1),
-                      valueColor: const AlwaysStoppedAnimation<Color>(emeraldGreen),
+                      backgroundColor: AppColors.primary.withOpacity(0.08),
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                     ),
                   ),
                   Container(
-                    width: 54,
-                    height: 54,
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: _isSosHolding ? AppColors.primary.withOpacity(0.1) : Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: emeraldGreen.withOpacity(0.15),
-                          blurRadius: 12,
+                          color: AppColors.primary.withOpacity(0.22),
+                          blurRadius: 14,
                           offset: const Offset(0, 6),
                         )
                       ],
-                      border: Border.all(color: emeraldGreen.withOpacity(0.05), width: 1),
+                      border: Border.all(
+                          color: _isSosHolding ? AppColors.primary : AppColors.primary.withOpacity(0.2),
+                          width: 1.5),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'SOS',
                         style: TextStyle(
-                          color: emeraldGreen,
+                          color: AppColors.primary,
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
                         ),
                       ),
                     ),
@@ -391,50 +396,95 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildWhiteCircleStat(String val, String label, IconData icon, Color iconColor) {
+  Widget _buildStatCard(String val, String label, IconData icon, Color iconColor) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 70,
           height: 70,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              )
             ],
           ),
-          child: Center(child: Icon(icon, color: iconColor, size: 28)),
+          child: Center(
+            child: Icon(icon, color: iconColor, size: 28),
+          ),
         ),
         const SizedBox(height: 10),
-        Text(val, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.w600)),
+        Text(
+          val,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildServiceItem(String label, IconData icon, Color color, [VoidCallback? onTap]) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 4))],
+  Widget _buildServiceItem(String label, IconData icon, [VoidCallback? onTap]) {
+    return Column(
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(22),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.darkAccent.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: AppColors.softAccent,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 24),
+              ),
             ),
-            child: Icon(icon, color: color, size: 26),
           ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.black87),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.darkAccent,
+              letterSpacing: 0.1),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }

@@ -15,7 +15,7 @@ class NotificationService {
           channelKey: 'eating_reminder',
           channelName: 'Eating Reminders',
           channelDescription: 'Notification channel for eating reminders',
-          defaultColor: const Color(0xFF4CAF50),
+          defaultColor: const Color(0xFF364E4F),
           ledColor: Colors.white,
           importance: NotificationImportance.Max,
           channelShowBadge: true,
@@ -138,7 +138,8 @@ class NotificationService {
           wakeUpScreen: true,
           autoDismissible: false,
           locked: true,
-          backgroundColor: Colors.green,
+          backgroundColor: const Color(0xFF364E4F),
+          largeIcon: 'asset://assets/images/logo_icon.png',
         ),
         actionButtons: [
           NotificationActionButton(

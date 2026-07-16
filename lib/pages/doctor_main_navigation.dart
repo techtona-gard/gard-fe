@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gard_fe/pages/doctor_home_page.dart';
 import 'package:gard_fe/pages/doctor_schedule_page.dart';
 import 'package:gard_fe/pages/doctor_profile_page.dart';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class DoctorMainNavigation extends StatefulWidget {
   const DoctorMainNavigation({super.key});
@@ -21,7 +22,7 @@ class _DoctorMainNavigationState extends State<DoctorMainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
+    const emeraldGreen = AppColors.doctorPrimary;
 
     return Scaffold(
       body: _pages[_selectedIndex],

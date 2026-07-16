@@ -1,79 +1,122 @@
 import 'package:flutter/material.dart';
 import 'package:gard_fe/main.dart';
 import 'package:gard_fe/pages/doctor_register_page.dart';
+import 'package:gard_fe/constants/app_colors.dart';
+import 'package:gard_fe/services/supabase_service.dart';
+import 'package:gard_fe/pages/complete_profile_page.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
-    const secondaryColor = Color(0xFFE8F5E9);
-
     return Scaffold(
-      backgroundColor: const Color(0xfff8f9fa),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // ── LOGO ICON ───────────────────────────────────────────────
+                Image.asset(
+                  'assets/images/logo_icon.png',
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.contain,
+                ),
+
+                const SizedBox(height: 40),
+
+                // ── Form Card ────────────────────────────────────────────────
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+                        color: AppColors.primary.withOpacity(0.08),
+                        blurRadius: 30,
+                        offset: const Offset(0, 12),
                       ),
                     ],
                   ),
                   child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: const BoxDecoration(
-                          color: secondaryColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.health_and_safety, size: 60, color: emeraldGreen),
-                      ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 4),
                       const Text(
-                        'Gard-Fe',
+                        'Selamat Datang Kembali',
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: emeraldGreen,
+                          color: AppColors.darkAccent,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       const Text(
-                        'Solusi Pintar untuk Penderita GERD',
+                        'Silakan masuk untuk melanjutkan\npemantauan kesehatan Anda.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                          height: 1.6,
+                        ),
                       ),
-                      const SizedBox(height: 40),
+
+                      const SizedBox(height: 36),
+
+                      // ── Tombol Masuk ───────────────────────────────────────
                       SizedBox(
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => const MainNavigation()),
+                          onPressed: () async {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => const Center(
+                                child: CircularProgressIndicator(color: AppColors.primary),
+                              ),
                             );
+
+                            try {
+                              await SupabaseService.instance.signInWithGoogle();
+                              final profileExists = await SupabaseService.instance.checkProfileExists();
+
+                              if (context.mounted) {
+                                Navigator.pop(context); // close loading dialog
+
+                                if (profileExists) {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const MainNavigation()),
+                                  );
+                                } else {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const CompleteProfilePage()),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                Navigator.pop(context); // close loading dialog
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Login Gagal: $e'),
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                );
+                              }
+                            }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black87,
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
                             elevation: 0,
-                            side: BorderSide(color: Colors.grey.shade300),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -81,66 +124,118 @@ class LoginPage extends StatelessWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Image.network(
-                                'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
-                                height: 24,
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, color: Colors.blue, size: 30),
+                              Image.asset(
+                                'assets/images/logo_icon.png',
+                                width: 22,
+                                height: 22,
+                                color: Colors.white,
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 10),
                               const Text(
-                                'Continue with Google',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                'Masuk ke GARD',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 32),
-                      Row(
+
+                      const SizedBox(height: 28),
+
+                      // ── Divider ────────────────────────────────────────────
+                      const Row(
                         children: [
-                          Expanded(child: Divider(color: Colors.grey.shade300)),
-                          const Padding(
+                          Expanded(child: Divider(color: AppColors.softAccent, thickness: 1)),
+                          Padding(
                             padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text('INFORMASI AKSES', style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
+                            child: Text(
+                              'AKSES PLATFORM',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
                           ),
-                          Expanded(child: Divider(color: Colors.grey.shade300)),
+                          Expanded(child: Divider(color: AppColors.softAccent, thickness: 1)),
                         ],
                       ),
-                      const SizedBox(height: 24),
+
+                      const SizedBox(height: 20),
+
                       _buildAccessRule(
-                        icon: Icons.person_outline,
+                        icon: Icons.person_outline_rounded,
                         title: 'Pengguna Umum',
-                        desc: 'Gunakan akun Google untuk memantau kesehatan GERD harian.',
-                        color: emeraldGreen,
+                        desc: 'Gunakan akun Google untuk akses cepat.',
+                        color: AppColors.primary,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       _buildAccessRule(
-                        icon: Icons.medical_services,
+                        icon: Icons.medical_services_outlined,
                         title: 'Tenaga Medis',
-                        desc: 'Masuk sebagai dokter untuk memantau perkembangan pasien Anda.',
-                        color: Colors.blue.shade700,
+                        desc: 'Akses khusus pemantauan pasien.',
+                        color: AppColors.darkAccent,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+
+                const SizedBox(height: 36),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Ingin bergabung sebagai mitra?'),
+                    const Text(
+                      'Ingin bergabung sebagai mitra?',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    ),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const DoctorRegisterPage()));
+                        Navigator.push(context,
+                            MaterialPageRoute(builder: (context) => const DoctorRegisterPage()));
                       },
-                      child: const Text('Daftar Dokter', style: TextStyle(color: emeraldGreen, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Daftar Dokter',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 8),
-                const Text(
-                  'GARD-FE PLATFORM © 2024',
-                  style: TextStyle(color: Colors.grey, fontSize: 10),
+
+                // Placeholder brand tagline
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/images/logo_icon.png',
+                      width: 14,
+                      height: 14,
+                      color: AppColors.textHint,
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'GARD · Gerd Guard © 2024',
+                      style: TextStyle(
+                        color: AppColors.textHint,
+                        fontSize: 11,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
+
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -149,33 +244,43 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAccessRule({required IconData icon, required String title, required String desc, required Color color}) {
+  Widget _buildAccessRule(
+      {required IconData icon, required String title, required String desc, required Color color}) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.1)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withOpacity(0.10),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 20, color: color),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 4),
-                Text(desc, style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppColors.darkAccent,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  desc,
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                ),
               ],
             ),
           ),

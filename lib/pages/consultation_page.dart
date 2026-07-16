@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class ConsultationPage extends StatelessWidget {
   const ConsultationPage({super.key});
@@ -40,7 +41,7 @@ class ConsultationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
+    const emeraldGreen = AppColors.doctorPrimary;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -98,7 +99,7 @@ class ConsultationPage extends StatelessWidget {
   }
 
   Widget _buildFilterChip(String label, bool isSelected) {
-    const emeraldGreen = Color(0xFF006D32);
+    const emeraldGreen = AppColors.doctorPrimary;
     return Container(
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

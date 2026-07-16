@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class DoctorSchedulePage extends StatefulWidget {
   const DoctorSchedulePage({super.key});
@@ -20,7 +21,7 @@ class _DoctorSchedulePageState extends State<DoctorSchedulePage> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
+    const emeraldGreen = AppColors.doctorPrimary;
     const bgColor = Color(0xFFF8F9FA);
 
     return Scaffold(
@@ -137,7 +138,7 @@ class _DoctorSchedulePageState extends State<DoctorSchedulePage> {
   }
 
   Widget _buildScheduleItem(String time, String patient, String type, bool isCompleted) {
-    const emeraldGreen = Color(0xFF006D32);
+    const emeraldGreen = AppColors.doctorPrimary;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),

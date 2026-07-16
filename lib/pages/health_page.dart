@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:gard_fe/constants/app_colors.dart';
 
 class HealthPage extends StatelessWidget {
   const HealthPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
+    const primaryGard = AppColors.primary;
+    const bgGard = AppColors.background;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: bgGard,
       appBar: AppBar(
         title: const Text('Kesehatan & Lifestyle', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: primaryGard,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -21,7 +24,7 @@ class HealthPage extends StatelessWidget {
           children: [
             const Text(
               'Grafik Aktivitas Mingguan',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: emeraldGreen),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryGard),
             ),
             const SizedBox(height: 20),
             Container(
@@ -33,13 +36,13 @@ class HealthPage extends StatelessWidget {
                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
               ),
               child: const Center(
-                child: Icon(Icons.bar_chart_rounded, size: 100, color: emeraldGreen),
+                child: Icon(Icons.bar_chart_rounded, size: 100, color: primaryGard),
               ),
             ),
             const SizedBox(height: 30),
             _buildStatTile('Pola Makan', '85% Teratur', Icons.restaurant_rounded, Colors.orange),
-            _buildStatTile('Kualitas Tidur', 'Baik (7.5 Jam)', Icons.bedtime_rounded, Colors.blue),
-            _buildStatTile('Aktivitas Fisik', '4.200 Langkah', Icons.directions_walk_rounded, Colors.green),
+            _buildStatTile('Kualitas Tidur', 'Baik (7.5 Jam)', Icons.bedtime_rounded, primaryGard),
+            _buildStatTile('Aktivitas Fisik', '4.200 Langkah', Icons.directions_walk_rounded, primaryGard),
           ],
         ),
       ),

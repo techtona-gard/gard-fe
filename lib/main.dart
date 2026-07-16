@@ -7,12 +7,24 @@ import 'package:gard_fe/pages/login_page.dart';
 import 'package:gard_fe/pages/home_page.dart';
 import 'package:gard_fe/pages/history_page.dart';
 import 'package:gard_fe/services/notification_service.dart';
+import 'package:gard_fe/services/sos_service.dart';
+import 'package:gard_fe/constants/app_colors.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 List<CameraDescription> cameras = [];
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  try {
+    await Supabase.initialize(
+      url: const String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://placeholder.supabase.co'),
+      anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'placeholder_key'),
+    );
+  } catch (e) {
+    debugPrint("Supabase initialization failed: $e");
+  }
+
   try {
     await NotificationService.initializeNotification();
   } catch (e) {
@@ -24,7 +36,7 @@ Future<void> main() async {
   } catch (e) {
     debugPrint("Camera error: $e");
   }
-  
+
   runApp(const MyApp());
 }
 
@@ -35,15 +47,47 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
-
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'Gard-Fe',
+      title: 'Gard',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: emeraldGreen),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+        primaryColor: AppColors.primary,
+        scaffoldBackgroundColor: AppColors.background,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          primary: AppColors.primary,
+          secondary: AppColors.midTeal,
+          surface: AppColors.card,
+          onPrimary: Colors.white,
+          onSecondary: Colors.white,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        cardTheme: CardThemeData(
+          color: AppColors.card,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppColors.card,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+        ),
       ),
       home: const LoginPage(),
       debugShowCheckedModeBanner: false,
@@ -61,6 +105,14 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SosService.checkAndRequestLocationPermission(context);
+    });
+  }
+
   final List<Widget> _pages = [
     const HomePage(key: ValueKey('home')),
     const ActivityPage(key: ValueKey('activity')),
@@ -70,7 +122,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    const emeraldGreen = Color(0xFF006D32);
+    final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
       extendBody: true,
@@ -89,7 +141,7 @@ class _MainNavigationState extends State<MainNavigation> {
           }
         },
         elevation: 8,
-        backgroundColor: emeraldGreen,
+        backgroundColor: primaryColor,
         shape: const CircleBorder(),
         child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 30),
       ),
@@ -97,7 +149,7 @@ class _MainNavigationState extends State<MainNavigation> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -118,11 +170,11 @@ class _MainNavigationState extends State<MainNavigation> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: <Widget>[
-                Expanded(child: _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home', emeraldGreen)),
-                Expanded(child: _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Aktivitas', emeraldGreen)),
+                Expanded(child: _buildNavItem(0, Icons.home_outlined, Icons.home_rounded, 'Home', primaryColor)),
+                Expanded(child: _buildNavItem(1, Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'Aktivitas', primaryColor)),
                 const SizedBox(width: 70),
-                Expanded(child: _buildNavItem(2, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Riwayat', emeraldGreen)),
-                Expanded(child: _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'Profil', emeraldGreen)),
+                Expanded(child: _buildNavItem(2, Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Riwayat', primaryColor)),
+                Expanded(child: _buildNavItem(3, Icons.person_outline_rounded, Icons.person_rounded, 'Profil', primaryColor)),
               ],
             ),
           ),
