@@ -21,15 +21,19 @@ class _ActivityPageState extends State<ActivityPage> {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = Colors.green.shade700;
+    const emeraldGreen = Color(0xFF006D32);
+    const softGreenTint = Color(0xFFE8F5E9);
+    const bgColor = Color(0xFFF8F9FA);
 
     return Scaffold(
-      backgroundColor: const Color(0xfff4f4f4),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text('Aktivitas & Jadwal', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: themeColor,
+        title: const Text('Aktivitas & Jadwal',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: emeraldGreen,
         foregroundColor: Colors.white,
         centerTitle: true,
+        elevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -37,12 +41,20 @@ class _ActivityPageState extends State<ActivityPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Calendar Card
+              // 1. Clean Monthly Calendar Card
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 15,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
+                padding: const EdgeInsets.only(bottom: 16),
                 child: TableCalendar(
                   firstDay: DateTime.utc(2020, 1, 1),
                   lastDay: DateTime.utc(2030, 12, 31),
@@ -54,103 +66,104 @@ class _ActivityPageState extends State<ActivityPage> {
                       _focusedDay = focusedDay;
                     });
                   },
+                  onPageChanged: (focusedDay) {
+                    _focusedDay = focusedDay;
+                  },
+                  // UI Customization
                   calendarStyle: CalendarStyle(
-                    todayDecoration: BoxDecoration(color: themeColor.withOpacity(0.3), shape: BoxShape.circle),
-                    selectedDecoration: BoxDecoration(color: themeColor, shape: BoxShape.circle),
+                    todayDecoration: BoxDecoration(
+                      color: emeraldGreen.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    todayTextStyle: const TextStyle(
+                        color: emeraldGreen, fontWeight: FontWeight.bold),
+                    selectedDecoration: const BoxDecoration(
+                      color: emeraldGreen,
+                      shape: BoxShape.circle,
+                    ),
+                    selectedTextStyle: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                    outsideDaysVisible: true,
+                    outsideTextStyle: const TextStyle(color: Colors.black12),
+                    defaultTextStyle: const TextStyle(color: Colors.black87),
+                    weekendTextStyle: const TextStyle(color: Colors.black87),
                   ),
                   headerStyle: const HeaderStyle(
                     formatButtonVisible: false,
                     titleCentered: true,
+                    titleTextStyle:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    headerPadding: EdgeInsets.symmetric(vertical: 16),
+                    leftChevronIcon:
+                        Icon(Icons.chevron_left, color: emeraldGreen),
+                    rightChevronIcon:
+                        Icon(Icons.chevron_right, color: emeraldGreen),
+                  ),
+                  daysOfWeekStyle: const DaysOfWeekStyle(
+                    weekdayStyle: TextStyle(
+                        color: Colors.black54,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
+                    weekendStyle: TextStyle(
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 28),
 
-              // Daily Reminders Card (Tap to trigger Alarm)
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+              // 2. Activity Reminders Section
+              const Text(
+                'PENGINGAT HARI INI',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black38,
+                  letterSpacing: 1.1,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'PENGINGAT HARI INI (TAP UNTUK TES ALARM)',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildActivityItem('Sarapan Pagi', '07:30', Icons.wb_sunny_outlined, Colors.orange, () {
-                      NotificationService.scheduleEatingReminder(
-                        title: 'Waktunya Sarapan! 🥣',
-                        body: 'Jangan lupa sarapan sehat untuk menjaga lambungmu.',
-                        secondsDelay: 3,
-                      );
-                    }),
-                    _buildActivityItem('Makan Siang', '12:30', Icons.restaurant, Colors.green, () {
-                      NotificationService.scheduleEatingReminder(
-                        title: 'Waktunya Makan Siang! 🥗',
-                        body: 'Sudah jam 12:30, yuk makan siang tepat waktu.',
-                        secondsDelay: 3,
-                      );
-                    }),
-                    _buildActivityItem('Makan Malam', '19:00', Icons.nightlight_round, Colors.blue, () {
-                      NotificationService.scheduleEatingReminder(
-                        title: 'Waktunya Makan Malam! 🍲',
-                        body: 'Jangan makan terlalu malam ya agar GERD tidak kambuh.',
-                        secondsDelay: 3,
-                      );
-                    }),
-                  ],
+              ),
+              const SizedBox(height: 16),
+
+              _buildActivityCard(
+                'Sarapan Pagi',
+                '07:30',
+                Icons.wb_sunny_outlined,
+                emeraldGreen,
+                softGreenTint,
+                () => NotificationService.scheduleEatingReminder(
+                  title: 'Waktunya Sarapan! 🥣',
+                  body: 'Jangan lupa sarapan sehat untuk menjaga lambungmu.',
+                  secondsDelay: 6,
+                ),
+              ),
+              _buildActivityCard(
+                'Makan Siang',
+                '12:30',
+                Icons.restaurant_rounded,
+                emeraldGreen,
+                softGreenTint,
+                () => NotificationService.scheduleEatingReminder(
+                  title: 'Waktunya Makan Siang! 🥗',
+                  body: 'Sudah jam 12:30, yuk makan siang tepat waktu.',
+                  secondsDelay: 6,
+                ),
+              ),
+              _buildActivityCard(
+                'Makan Malam',
+                '19:00',
+                Icons.nightlight_round_rounded,
+                emeraldGreen,
+                softGreenTint,
+                () => NotificationService.scheduleEatingReminder(
+                  title: 'Waktunya Makan Malam! 🍲',
+                  body: 'Jangan makan terlalu malam ya agar GERD tidak kambuh.',
+                  secondsDelay: 6,
                 ),
               ),
 
-              const SizedBox(height: 20),
-
-              // Consultation Card (Changed to Green)
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'JADWAL KONSULTASI',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50, // Changed to Green
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.green.shade100),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.video_call, color: themeColor),
-                          const SizedBox(width: 16),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Konsultasi Dokter Andi', style: TextStyle(fontWeight: FontWeight.bold)),
-                                Text('Google Meet • 10:00 - 11:00', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 80),
+              const SizedBox(height: 100), // Space for bottom bar notch
             ],
           ),
         ),
@@ -158,36 +171,68 @@ class _ActivityPageState extends State<ActivityPage> {
     );
   }
 
-  Widget _buildActivityItem(String title, String time, IconData icon, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xfff8f9fa),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-              child: Icon(icon, color: color, size: 20),
+  Widget _buildActivityCard(String title, String time, IconData icon,
+      Color accentColor, Color tintColor, VoidCallback onTap) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Icon with Soft Green Tint background
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: tintColor,
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text(time, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                ],
-              ),
+            child: Icon(icon, color: accentColor, size: 22),
+          ),
+          const SizedBox(width: 16),
+          // Texts
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  time,
+                  style: const TextStyle(
+                    color: Colors.black38,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            const Icon(Icons.play_circle_outline, color: Colors.green, size: 24),
-          ],
-        ),
+          ),
+          // Action Button
+          IconButton(
+            onPressed: onTap,
+            icon: Icon(Icons.play_circle_fill_rounded,
+                color: accentColor, size: 28),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
       ),
     );
   }
