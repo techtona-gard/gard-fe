@@ -148,7 +148,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
               // Circle Health Stats
               SliverPadding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                 sliver: SliverToBoxAdapter(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -164,20 +164,30 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
               // Main Services Grid
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('LAYANAN UTAMA', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54, letterSpacing: 1.5)),
-                      const SizedBox(height: 32), // High/spacious gap as requested
+                      const SizedBox(height: 48), // Spacious gap from health stats
+                      const Text(
+                        'LAYANAN UTAMA', 
+                        style: TextStyle(
+                          fontSize: 12, 
+                          fontWeight: FontWeight.bold, 
+                          color: Colors.black54, 
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 24), // Ideal gap for clean hierarchy
                       GridView.count(
+                        padding: EdgeInsets.zero,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         crossAxisCount: 4,
                         mainAxisSpacing: 24,
                         crossAxisSpacing: 12,
-                        childAspectRatio: 0.8,
+                        childAspectRatio: 0.85,
                         children: [
                           _buildServiceItem('Kesehatan', Icons.insights_rounded, emeraldGreen, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HealthPage()))),
                           _buildServiceItem('Konsultasi', Icons.forum_rounded, Colors.blue, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsultationPage()))),

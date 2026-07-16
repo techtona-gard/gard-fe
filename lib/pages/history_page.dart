@@ -6,43 +6,91 @@ class HistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const emeraldGreen = Color(0xFF006D32);
+    const forestGreen = Color(0xFF004D21);
+    const bgColor = Color(0xFFF8F9FA);
 
     return Scaffold(
-      backgroundColor: const Color(0xfff4f4f4),
-      appBar: AppBar(
-        title: const Text('Rekam Medis & History', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: emeraldGreen,
-        foregroundColor: Colors.white,
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
+      backgroundColor: bgColor,
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHistoryItem(
-              context,
-              'Gejala GERD Terdeteksi',
-              '16 Juli 2024, 08:30',
-              'Tingkat Keparahan: Sedang',
-              Icons.warning_amber_rounded,
-              Colors.orange,
+            // 1. Elegant Rounded Header (Non-floating)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [emeraldGreen, forestGreen],
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
+                ),
+              ),
+              child: const Column(
+                children: [
+                  Text(
+                    'Rekam Medis & Riwayat',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Catatan perjalanan kesehatan Anda',
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                ],
+              ),
             ),
-            _buildHistoryItem(
-              context,
-              'Konsultasi Dokter',
-              '14 Juli 2024, 10:00',
-              'Dokter: dr. Andi (Sp.PD)',
-              Icons.medical_services_outlined,
-              Colors.blue,
-            ),
-            _buildHistoryItem(
-              context,
-              'Pemeriksaan GerdQ',
-              '10 Juli 2024, 20:00',
-              'Hasil: Resiko Tinggi',
-              Icons.assignment_outlined,
-              Colors.red,
+
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'RIWAYAT TERBARU',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black38,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildHistoryItem(
+                    context,
+                    'Gejala GERD Terdeteksi',
+                    '16 Juli 2024, 08:30',
+                    'Tingkat Keparahan: Sedang',
+                    Icons.warning_amber_rounded,
+                    Colors.orange,
+                  ),
+                  _buildHistoryItem(
+                    context,
+                    'Konsultasi Dokter',
+                    '14 Juli 2024, 10:00',
+                    'Dokter: dr. Andi (Sp.PD)',
+                    Icons.medical_services_outlined,
+                    Colors.blue,
+                  ),
+                  _buildHistoryItem(
+                    context,
+                    'Pemeriksaan GerdQ',
+                    '10 Juli 2024, 20:00',
+                    'Hasil: Resiko Tinggi',
+                    Icons.assignment_outlined,
+                    Colors.red,
+                  ),
+                  const SizedBox(height: 120), // Space for navigation
+                ],
+              ),
             ),
           ],
         ),
@@ -58,7 +106,7 @@ class HistoryPage extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24), // Smoother rounded
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
       ),
       child: Row(
