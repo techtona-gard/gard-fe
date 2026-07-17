@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
-import 'package:gard_fe/main.dart';
-import 'package:gard_fe/pages/camera_page.dart';
-import 'package:gard_fe/pages/chatbot_page.dart';
+import 'package:gard/main.dart';
+import 'package:gard/pages/camera_page.dart';
+import 'package:gard/pages/chatbot_page.dart';
 
 class NotificationService {
   static Future<void> initializeNotification() async {

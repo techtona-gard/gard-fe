@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:gard_fe/services/notification_service.dart';
-import 'package:gard_fe/constants/app_colors.dart';
+import 'package:gard/services/notification_service.dart';
+import 'package:gard/constants/app_colors.dart';
 
 class ActivityPage extends StatefulWidget {
   const ActivityPage({super.key});

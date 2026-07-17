@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:gard_fe/constants/app_colors.dart';
-import 'package:gard_fe/pages/history_detail_page.dart';
+import 'package:gard/constants/app_colors.dart';
+import 'package:gard/pages/history_detail_page.dart';
+import 'package:gard/services/sos_history_service.dart';
 
-class HistoryPage extends StatelessWidget {
+class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
 
+  @override
+  State<HistoryPage> createState() => _HistoryPageState();
+}
+
+class _HistoryPageState extends State<HistoryPage> {
   static final List<HistoryItem> _historyItems = [
     const HistoryItem(
       title: 'Gejala GERD Terdeteksi',
@@ -62,7 +68,12 @@ class HistoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ListenableBuilder(
+      listenable: SosHistoryService(),
+      builder: (context, _) {
+        final sosEvents = SosHistoryService().events;
+        final totalRiwayat = _historyItems.length + sosEvents.length;
+        return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         child: Column(
@@ -96,9 +107,9 @@ class HistoryPage extends StatelessWidget {
                   // Stat pills row
                   Row(
                     children: [
-                      _buildHeaderStatPill(Icons.folder_rounded, '3', 'Riwayat'),
+                      _buildHeaderStatPill(null, '$totalRiwayat', 'Riwayat'),
                       const SizedBox(width: 10),
-                      _buildHeaderStatPill(Icons.medical_services_rounded, '1', 'Konsultasi'),
+                      _buildHeaderStatPill(null, '1', 'Konsultasi'),
                       const SizedBox(width: 10),
                       _buildHeaderStatPill(Icons.favorite_rounded, 'Sedang', 'Kondisi'),
                     ],
@@ -124,6 +135,8 @@ class HistoryPage extends StatelessWidget {
                         _buildFilterChip('Konsultasi', false),
                         const SizedBox(width: 8),
                         _buildFilterChip('Kuesioner', false),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('SOS', false),
                       ],
                     ),
                   ),
@@ -150,6 +163,9 @@ class HistoryPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
 
+                  // SOS events dari service (ditampilkan paling atas)
+                  ...sosEvents.map((e) => _buildSosCard(context, e)),
+
                   ..._historyItems.map((item) => _buildHistoryCard(context, item)),
 
                   const SizedBox(height: 120),
@@ -160,23 +176,82 @@ class HistoryPage extends StatelessWidget {
         ),
       ),
     );
+  },
+);
   }
 
-  Widget _buildHeaderStatPill(IconData icon, String value, String label) {
+  Widget _buildSosCard(BuildContext context, SosEvent event) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE53935).withOpacity(0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE53935).withOpacity(0.07),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        leading: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFEBEE),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(Icons.sos_rounded, color: Color(0xFFE53935), size: 24),
+        ),
+        title: const Text(
+          'SOS Darurat Dikirim',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.darkAccent),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(event.formattedTime,
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            const SizedBox(height: 4),
+            Text('Tenaga Kesehatan: ${event.number}',
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          ],
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFEBEE),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text('SOS',
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFE53935))),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderStatPill(IconData? icon, String value, String label) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.15),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.white.withOpacity(0.2)),
         ),
         child: Row(
+          mainAxisAlignment: icon == null ? MainAxisAlignment.center : MainAxisAlignment.start,
           children: [
-            Icon(icon, color: Colors.white70, size: 14),
-            const SizedBox(width: 6),
+            if (icon != null) ...[
+              Icon(icon, color: Colors.white70, size: 14),
+              const SizedBox(width: 6),
+            ],
             Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: icon == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
               children: [
                 Text(value,
                     style: const TextStyle(

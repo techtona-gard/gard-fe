@@ -10,7 +10,7 @@ class SupabaseService {
 
   bool get isConfigured {
     // Check if initialized with actual credentials or placeholder
-    final url = Supabase.instance.client.supabaseUrl;
+    final url = Supabase.instance.client.rest.url;
     return !url.contains('placeholder.supabase.co');
   }
 
@@ -82,9 +82,18 @@ class SupabaseService {
     required double height,
     required double weight,
     required String birthDate,
+    String? name,
+    String? email,
+    String? emergencyContact,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('mock_profile_completed', true);
+    if (name != null) await prefs.setString('profile_name', name);
+    if (email != null) await prefs.setString('profile_email', email);
+    await prefs.setString('profile_height', height.toString());
+    await prefs.setString('profile_weight', weight.toString());
+    await prefs.setString('profile_birth_date', birthDate);
+    if (emergencyContact != null) await prefs.setString('profile_emergency_contact', emergencyContact);
 
     if (!isConfigured) {
       debugPrint("Saved profile details to Mock database.");
@@ -96,21 +105,64 @@ class SupabaseService {
       if (user == null) throw Exception("No authenticated user found.");
 
       // Store in profiles table with RLS enabled
-      // The profiles table has columns: id (matches auth.users.id), full_name, email, avatar_url, height, weight, birth_date, updated_at
       await _client.from('profiles').upsert({
         'id': user.id,
-        'full_name': user.userMetadata?['full_name'] ?? user.userMetadata?['name'] ?? '',
-        'email': user.email ?? '',
+        'full_name': name ?? user.userMetadata?['full_name'] ?? user.userMetadata?['name'] ?? '',
+        'email': email ?? user.email ?? '',
         'avatar_url': user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'] ?? '',
         'height': height,
         'weight': weight,
         'birth_date': birthDate,
+        'emergency_contact': emergencyContact ?? '',
         'updated_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       debugPrint("Error saving profile to Supabase: $e");
       rethrow;
     }
+  }
+
+  /// Fetches profile data from database or SharedPreferences
+  Future<Map<String, dynamic>?> getProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!isConfigured) {
+      return {
+        'name': prefs.getString('profile_name') ?? 'Brawidya Puja Dharma',
+        'email': prefs.getString('profile_email') ?? 'brawidya12@gmail.com',
+        'height': prefs.getString('profile_height') ?? '175',
+        'weight': prefs.getString('profile_weight') ?? '70',
+        'birth_date': prefs.getString('profile_birth_date') ?? '12 Agustus 1998',
+        'emergency_contact': prefs.getString('profile_emergency_contact') ?? '081272733891',
+        'gerd_status': prefs.getString('profile_gerd_status') ?? 'Resiko Rendah',
+      };
+    }
+
+    try {
+      final user = _client.auth.currentUser;
+      if (user == null) return null;
+
+      final response = await _client
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (response != null) {
+        return {
+          'name': response['full_name'] ?? user.userMetadata?['full_name'] ?? user.userMetadata?['name'] ?? '',
+          'email': response['email'] ?? user.email ?? '',
+          'avatar_url': response['avatar_url'] ?? user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'] ?? '',
+          'height': response['height']?.toString() ?? '',
+          'weight': response['weight']?.toString() ?? '',
+          'birth_date': response['birth_date'] ?? '',
+          'emergency_contact': response['emergency_contact'] ?? '',
+          'gerd_status': response['gerd_status'] ?? 'Resiko Rendah',
+        };
+      }
+    } catch (e) {
+      debugPrint("Error fetching profile from Supabase: $e");
+    }
+    return null;
   }
 
   /// Get current user display info

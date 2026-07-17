@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gard_fe/constants/app_colors.dart';
-import 'package:gard_fe/main.dart';
-import 'package:gard_fe/services/supabase_service.dart';
-import 'package:gard_fe/pages/login_page.dart';
+import 'package:gard/constants/app_colors.dart';
+import 'package:gard/main.dart';
+import 'package:gard/services/supabase_service.dart';
+import 'package:gard/pages/login_page.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   const CompleteProfilePage({super.key});
@@ -76,7 +76,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                 Text('Profil berhasil dilengkapi!'),
               ],
             ),
-            backgroundColor: AppColors.success,
+            backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),

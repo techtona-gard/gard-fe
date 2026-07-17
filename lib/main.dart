@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:gard_fe/pages/camera_page.dart';
-import 'package:gard_fe/pages/activity_page.dart';
-import 'package:gard_fe/pages/profile_page.dart';
-import 'package:gard_fe/pages/login_page.dart';
-import 'package:gard_fe/pages/home_page.dart';
-import 'package:gard_fe/pages/history_page.dart';
-import 'package:gard_fe/services/notification_service.dart';
-import 'package:gard_fe/services/sos_service.dart';
-import 'package:gard_fe/constants/app_colors.dart';
+import 'package:gard/pages/camera_page.dart';
+import 'package:gard/pages/activity_page.dart';
+import 'package:gard/pages/profile_page.dart';
+import 'package:gard/pages/login_page.dart';
+import 'package:gard/pages/home_page.dart';
+import 'package:gard/pages/history_page.dart';
+import 'package:gard/services/notification_service.dart';
+import 'package:gard/services/sos_service.dart';
+import 'package:gard/constants/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 List<CameraDescription> cameras = [];

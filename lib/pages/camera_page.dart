@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:gard_fe/constants/app_colors.dart';
+import 'package:gard/constants/app_colors.dart';
+import 'package:gard/pages/chatbot_page.dart';
 
 class CameraPage extends StatefulWidget {
   final CameraDescription camera;
@@ -62,22 +63,13 @@ class _CameraPageState extends State<CameraPage>
       final image = await _controller.takePicture();
       setState(() => _isCapturing = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Text('Gambar dianalisis: ${image.name}'),
-              ],
-            ),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(16),
+        // Navigate to Chatbot with the captured image
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatbotPage(capturedImagePath: image.path),
           ),
         );
-        Navigator.pop(context);
       }
     } catch (e) {
       setState(() => _isCapturing = false);

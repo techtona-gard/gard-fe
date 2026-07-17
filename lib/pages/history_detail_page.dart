@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gard_fe/constants/app_colors.dart';
+import 'package:gard/constants/app_colors.dart';
 
 /// Model data untuk item riwayat
 class HistoryItem {

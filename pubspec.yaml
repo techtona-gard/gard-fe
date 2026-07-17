@@ -1,5 +1,5 @@
-name: gard_fe
-description: "A new Flutter project."
+name: gard
+description: "Gerd Guard"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -47,6 +47,7 @@ dependencies:
   http: ^1.6.0
   supabase_flutter: ^2.16.0
   google_sign_in: ^7.2.0
+  flutter_phone_direct_caller: ^2.2.1
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +59,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -104,3 +106,9 @@ flutter:
 dependency_overrides:
   win32: ^5.11.0
   package_info_plus: ^8.1.2
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo_icon.png"
+  min_sdk_android: 21

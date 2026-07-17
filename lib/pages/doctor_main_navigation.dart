@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gard_fe/pages/doctor_home_page.dart';
-import 'package:gard_fe/pages/doctor_schedule_page.dart';
-import 'package:gard_fe/pages/doctor_profile_page.dart';
-import 'package:gard_fe/constants/app_colors.dart';
+import 'package:gard/pages/doctor_home_page.dart';
+import 'package:gard/pages/doctor_schedule_page.dart';
+import 'package:gard/pages/doctor_profile_page.dart';
+import 'package:gard/constants/app_colors.dart';
 
 class DoctorMainNavigation extends StatefulWidget {
   const DoctorMainNavigation({super.key});

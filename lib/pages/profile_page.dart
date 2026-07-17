@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:gard_fe/pages/gerdq_page.dart';
-import 'package:gard_fe/pages/login_page.dart';
-import 'package:gard_fe/pages/edit_profile_page.dart';
-import 'package:gard_fe/constants/app_colors.dart';
+import 'package:gard/pages/gerdq_page.dart';
+import 'package:gard/pages/login_page.dart';
+import 'package:gard/pages/edit_profile_page.dart';
+import 'package:gard/constants/app_colors.dart';
+import 'package:gard/services/supabase_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -19,35 +20,137 @@ class _ProfilePageState extends State<ProfilePage> {
   String gerdStatus = "Resiko Rendah";
   String email = "brawidya12@gmail.com";
   String birthDate = "12 Agustus 1998";
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    setState(() => _isLoading = true);
+    final data = await SupabaseService.instance.getProfileData();
+    if (data != null) {
+      setState(() {
+        name = data['name'] ?? name;
+        email = data['email'] ?? email;
+        height = data['height'] ?? height;
+        weight = data['weight'] ?? weight;
+        birthDate = data['birth_date'] ?? birthDate;
+        emergencyContact = data['emergency_contact'] ?? emergencyContact;
+        gerdStatus = data['gerd_status'] ?? gerdStatus;
+      });
+    }
+    setState(() => _isLoading = false);
+  }
 
   void _handleLogout() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Keluar Akun'),
-        content: const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-                (route) => false,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 28),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            child: const Text('Ya, Keluar'),
-          ),
-        ],
+            // Icon illustration
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.logout_rounded,
+                color: AppColors.error,
+                size: 34,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Keluar Akun?',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkAccent,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Anda akan keluar dari sesi ini.\nSemua data tetap aman tersimpan.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 28),
+            // Tombol Ya, Keluar
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                    (route) => false,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Ya, Keluar',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Tombol Batal
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -62,23 +165,58 @@ class _ProfilePageState extends State<ProfilePage> {
           weight: weight,
           emergencyContact: emergencyContact,
           email: email,
+          birthDate: birthDate,
         ),
       ),
     );
     if (result != null) {
-      setState(() {
-        name = result['name'] ?? name;
-        height = result['height'] ?? height;
-        weight = result['weight'] ?? weight;
-        emergencyContact = result['emergencyContact'] ?? emergencyContact;
-        email = result['email'] ?? email;
-        birthDate = result['birthDate'] ?? birthDate;
-      });
+      final newName = result['name'] ?? name;
+      final newEmail = result['email'] ?? email;
+      final newHeight = result['height'] ?? height;
+      final newWeight = result['weight'] ?? weight;
+      final newEmergencyContact = result['emergencyContact'] ?? emergencyContact;
+      final newBirthDate = result['birthDate'] ?? birthDate;
+
+      setState(() => _isLoading = true);
+      try {
+        await SupabaseService.instance.saveProfile(
+          height: double.tryParse(newHeight) ?? 175,
+          weight: double.tryParse(newWeight) ?? 70,
+          birthDate: newBirthDate,
+          name: newName,
+          email: newEmail,
+          emergencyContact: newEmergencyContact,
+        );
+        setState(() {
+          name = newName;
+          email = newEmail;
+          height = newHeight;
+          weight = newWeight;
+          emergencyContact = newEmergencyContact;
+          birthDate = newBirthDate;
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal memperbarui data: $e'), backgroundColor: AppColors.primary),
+          );
+        }
+      } finally {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(

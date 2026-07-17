@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:gard_fe/pages/chatbot_page.dart';
-import 'package:gard_fe/pages/gerdq_page.dart';
-import 'package:gard_fe/pages/health_page.dart';
-import 'package:gard_fe/pages/consultation_page.dart';
-import 'package:gard_fe/pages/education_page.dart';
+import 'dart:ui';
+import 'package:gard/services/health_connect_service.dart';
+import 'package:gard/pages/chatbot_page.dart';
+import 'package:gard/pages/gerdq_page.dart';
+import 'package:gard/pages/health_page.dart';
+import 'package:gard/pages/consultation_page.dart';
+import 'package:gard/pages/education_page.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:gard/services/sos_history_service.dart';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import 'dart:ui';
-import 'package:gard_fe/constants/app_colors.dart';
+import 'package:gard/constants/app_colors.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,10 +25,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   late AnimationController _sosController;
   bool _isSosHolding = false;
+  Map<String, dynamic>? _healthSummary;
 
   @override
   void initState() {
     super.initState();
+    _loadHealthData();
     _sosController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
@@ -44,10 +51,103 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     super.dispose();
   }
 
-  void _triggerSos() {
+  Future<void> _loadHealthData() async {
+    final healthService = HealthService();
+    await healthService.init();
+    
+    // Cek apakah sudah ada izin
+    bool hasPermission = await healthService.hasPermissions();
+    if (hasPermission) {
+      final summary = await healthService.getTodaySummary();
+      if (mounted) {
+        setState(() {
+          _healthSummary = summary;
+        });
+      }
+    } else {
+      // Karena ini setelah await, kita bisa langsung panggil showDialog jika masih mounted
+      if (mounted) {
+        _showHealthConnectDialog(healthService);
+      }
+    }
+  }
+
+  void _showHealthConnectDialog(HealthService healthService) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: [
+              const Icon(Icons.health_and_safety_rounded, color: AppColors.primary, size: 28),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text('Hubungkan Google Health', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.darkAccent)),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Hubungkan GARD dengan Google Health Connect untuk mendapatkan analisis kesehatan lambung yang lebih terpersonalisasi berdasarkan data aktivitas, detak jantung, dan pola tidur Anda.',
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('NANTI', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context); // Tutup dialog
+                bool authorized = await healthService.requestPermissions();
+                if (authorized) {
+                  final summary = await healthService.getTodaySummary();
+                  if (mounted) {
+                    setState(() {
+                      _healthSummary = summary;
+                    });
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('HUBUNGKAN', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _triggerSos() async {
     setState(() => _isSosHolding = false);
     _sosController.reset();
-    _sendFonnteWhatsApp();
+
+    // 1️⃣ Log SOS ke riwayat (in-memory, langsung)
+    SosHistoryService().addEvent(number: '081280295818');
+
+    // 2️⃣ Kirim pesan WA di background (fire-and-forget, tidak menunggu)
+    // _sendFonnteWhatsApp(); // DIMATIKAN SEMENTARA AGAR API TIDAK HABIS
+
+    // 3️⃣ Langsung telepon ke nomor darurat
+    try {
+      final status = await Permission.phone.request();
+      if (status.isGranted) {
+        const platform = MethodChannel('com.gard.sos/call');
+        await platform.invokeMethod('directCall', {'number': '081280295818'});
+      } else {
+        debugPrint('Izin telepon ditolak oleh pengguna.');
+      }
+    } catch (e) {
+      debugPrint('Tidak dapat memanggil nomor telepon darurat: $e');
+    }
+
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -257,14 +357,37 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                 sliver: SliverToBoxAdapter(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildStatCard('80', 'BPM', Icons.favorite_rounded, Colors.redAccent),
-                      _buildStatCard('Normal', 'Stres', Icons.psychology_rounded, AppColors.midTeal),
-                      _buildStatCard('7h 20m', 'Tidur', Icons.bedtime_rounded, AppColors.primary),
-                      _buildStatCard('4.2k', 'Langkah', Icons.directions_walk_rounded, const Color(0xFFE67E22)),
-                    ],
+                  child: Builder(
+                    builder: (context) {
+                      String bpm = '-';
+                      String sleep = '-';
+                      String steps = '-';
+
+                      if (_healthSummary != null) {
+                        final heartRate = _healthSummary!['heartRate'] ?? 0.0;
+                        final sleepMins = _healthSummary!['sleepMinutes'] ?? 0;
+                        final stepsCount = _healthSummary!['steps'] ?? 0;
+                        
+                        if (heartRate > 0) bpm = heartRate.toStringAsFixed(0);
+                        if (sleepMins > 0) {
+                          int h = sleepMins ~/ 60;
+                          int m = sleepMins % 60;
+                          sleep = '${h}h ${m}m';
+                        }
+                        if (stepsCount > 0) {
+                          steps = stepsCount >= 1000 ? '${(stepsCount / 1000).toStringAsFixed(1)}k' : stepsCount.toString();
+                        }
+                      }
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildStatCard(bpm, 'BPM', Icons.favorite_rounded, Colors.redAccent),
+                          _buildStatCard(sleep, 'Tidur', Icons.bedtime_rounded, AppColors.primary),
+                          _buildStatCard(steps, 'Langkah', Icons.directions_walk_rounded, const Color(0xFFE67E22)),
+                        ],
+                      );
+                    }
                   ),
                 ),
               ),
@@ -309,18 +432,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         crossAxisSpacing: 12,
                         childAspectRatio: 0.78,
                         children: [
-                          _buildServiceItem('Kesehatan', Icons.add_circle_outline_rounded,
+                          _buildServiceItem('Kesehatan', Icons.favorite_outlined, const Color(0xFFE53935), const Color(0xFFFFEBEE),
                               () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HealthPage()))),
-                          _buildServiceItem('Konsultasi', Icons.person_search_rounded,
+                          _buildServiceItem('Konsultasi', Icons.person_search_rounded, const Color(0xFF1565C0), const Color(0xFFE3F2FD),
                               () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ConsultationPage()))),
-                          _buildServiceItem('Edukasi', Icons.auto_stories_outlined,
+                          _buildServiceItem('Edukasi', Icons.auto_stories_rounded, const Color(0xFFE67E22), const Color(0xFFFFF3E0),
                               () => Navigator.push(context, MaterialPageRoute(builder: (context) => const EducationPage()))),
-                          _buildServiceItem('Chatbot', Icons.chat_bubble_outline_rounded,
+                          _buildServiceItem('Chatbot', Icons.smart_toy_rounded, const Color(0xFF2C5358), const Color(0xFFE8F5E9),
                               () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatbotPage()))),
-                          _buildServiceItem('Apotek', Icons.local_pharmacy_outlined),
-                          _buildServiceItem('Nutrisi', Icons.restaurant_menu_rounded),
-                          _buildServiceItem('Komunitas', Icons.groups_2_outlined),
-                          _buildServiceItem('Lainnya', Icons.grid_view_rounded),
+                          _buildServiceItem('Apotek', Icons.local_pharmacy_rounded, const Color(0xFF6A1B9A), const Color(0xFFF3E5F5)),
+                          _buildServiceItem('Nutrisi', Icons.restaurant_menu_rounded, const Color(0xFF2E7D32), const Color(0xFFE8F5E9)),
+                          _buildServiceItem('Komunitas', Icons.groups_2_rounded, const Color(0xFF00838F), const Color(0xFFE0F7FA)),
+                          _buildServiceItem('Lainnya', Icons.grid_view_rounded, const Color(0xFF546E7A), const Color(0xFFECEFF1)),
                         ],
                       ),
                     ],
@@ -332,9 +455,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             ],
           ),
 
-          // ── SOS Button ────────────────────────────────────────────────────
+          // ── SOS Button ────────────────────────────────────────────────
           Positioned(
-            bottom: 110,
+            bottom: 100,
             right: 20,
             child: GestureDetector(
               onLongPressStart: (_) {
@@ -440,7 +563,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildServiceItem(String label, IconData icon, [VoidCallback? onTap]) {
+  Widget _buildServiceItem(String label, IconData icon, Color iconColor, Color bgColor, [VoidCallback? onTap]) {
     return Column(
       children: [
         Material(
@@ -451,23 +574,23 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.darkAccent.withOpacity(0.05),
-                    blurRadius: 10,
+                    color: iconColor.withOpacity(0.12),
+                    blurRadius: 12,
                     offset: const Offset(0, 4),
                   )
                 ],
               ),
               child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: AppColors.softAccent,
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: bgColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 24),
+                child: Icon(icon, color: iconColor, size: 24),
               ),
             ),
           ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gard_fe/pages/doctor_main_navigation.dart';
-import 'package:gard_fe/constants/app_colors.dart';
+import 'package:gard/pages/doctor_main_navigation.dart';
+import 'package:gard/constants/app_colors.dart';
 
 class DoctorVerificationPage extends StatefulWidget {
   const DoctorVerificationPage({super.key});

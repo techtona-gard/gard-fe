@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:gard_fe/constants/app_colors.dart';
+import 'package:gard/constants/app_colors.dart';
 
 class DoctorSchedulePage extends StatefulWidget {
   const DoctorSchedulePage({super.key});

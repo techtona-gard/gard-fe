@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:gard_fe/main.dart';
-import 'package:gard_fe/pages/doctor_register_page.dart';
-import 'package:gard_fe/constants/app_colors.dart';
-import 'package:gard_fe/services/supabase_service.dart';
-import 'package:gard_fe/pages/complete_profile_page.dart';
+import 'package:gard/main.dart';
+import 'package:gard/pages/doctor_register_page.dart';
+import 'package:gard/constants/app_colors.dart';
+import 'package:gard/services/supabase_service.dart';
+import 'package:gard/pages/complete_profile_page.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
