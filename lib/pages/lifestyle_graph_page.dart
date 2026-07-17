@@ -136,41 +136,37 @@ class _LifestyleGraphPageState extends State<LifestyleGraphPage> {
   }
 
   Widget _buildContent() {
-    return Column(
-      children: [
-        // Metric Selector
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildMetricChip('Langkah', Icons.directions_walk_rounded),
-                const SizedBox(width: 8),
-                _buildMetricChip('Detak Jantung', Icons.favorite_rounded),
-                const SizedBox(width: 8),
-                _buildMetricChip('Tidur', Icons.bedtime_rounded),
-              ],
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Metric selector tabs
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  _buildMetricChip('Langkah', Icons.directions_walk_rounded),
+                  const SizedBox(width: 8),
+                  _buildMetricChip('Detak Jantung', Icons.favorite_rounded),
+                  const SizedBox(width: 8),
+                  _buildMetricChip('Tidur', Icons.bedtime_rounded),
+                  const SizedBox(width: 8),
+                  _buildMetricChip('Kalori', Icons.local_fire_department_rounded),
+                ],
+              ),
             ),
           ),
-        ),
-        
-        Expanded(
-          child: Padding(
+          Padding(
             padding: const EdgeInsets.all(20.0),
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                border: Border.all(color: AppColors.softAccent),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,16 +175,111 @@ class _LifestyleGraphPageState extends State<LifestyleGraphPage> {
                     'Riwayat $_selectedMetric',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.darkAccent),
                   ),
-                  const SizedBox(height: 30),
-                  Expanded(
+                  const SizedBox(height: 12),
+                  _buildMiniStats(),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 200,
                     child: _buildChart(),
                   ),
                 ],
               ),
             ),
           ),
-        ),
+          // Solid primary (green) card for analysis at the bottom
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.analytics_outlined, color: AppColors.softAccent, size: 22),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Analisis Gaya Hidup AI',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Berdasarkan riwayat metrik gaya hidup Anda belakangan ini, aktivitas harian dan pola tidur Anda masih dalam batas aman untuk pengidap gejala lambung. Tetap pertahankan pergerakan konstan dan pastikan tidak berbaring sesaat setelah makan.',
+                    style: TextStyle(
+                      color: AppColors.softAccent,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniStats() {
+    List<double> values = [];
+    for (final item in _lifestyles) {
+      double? v;
+      if (_selectedMetric == 'Langkah') v = item.step?.toDouble();
+      else if (_selectedMetric == 'Detak Jantung') v = item.heartrate?.toDouble();
+      else if (_selectedMetric == 'Tidur') v = item.sleep;
+      else if (_selectedMetric == 'Kalori' && item.step != null) v = item.step! * 0.04;
+      if (v != null && v > 0) values.add(v);
+    }
+    if (values.isEmpty) return const SizedBox.shrink();
+    final avg = values.reduce((a, b) => a + b) / values.length;
+    final max = values.reduce((a, b) => a > b ? a : b);
+    final min = values.reduce((a, b) => a < b ? a : b);
+    String fmt(double v) => _selectedMetric == 'Langkah'
+        ? '${(v / 1000).toStringAsFixed(1)}k'
+        : _selectedMetric == 'Kalori'
+            ? '${v.toStringAsFixed(0)} Kkal'
+            : v.toStringAsFixed(1);
+    return Row(
+      children: [
+        _buildMiniStatBox('Rata-rata', fmt(avg), AppColors.primary),
+        const SizedBox(width: 8),
+        _buildMiniStatBox('Tertinggi', fmt(max), AppColors.success),
+        const SizedBox(width: 8),
+        _buildMiniStatBox('Terendah', fmt(min), AppColors.midTeal),
       ],
+    );
+  }
+
+  Widget _buildMiniStatBox(String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.softAccent),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textHint, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 2),
+            Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -197,22 +288,30 @@ class _LifestyleGraphPageState extends State<LifestyleGraphPage> {
     return GestureDetector(
       onTap: () => setState(() => _selectedMetric = metric),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.background,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? AppColors.primary : AppColors.softAccent),
+          color: isSelected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.softAccent,
+            width: 1.5,
+          ),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: isSelected ? Colors.white : AppColors.textSecondary),
+            Icon(icon, size: 15, color: isSelected ? Colors.white : AppColors.textSecondary),
             const SizedBox(width: 6),
-            Text(
-              metric,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
+            Flexible(
+              child: Text(
+                metric,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 12,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -241,6 +340,9 @@ class _LifestyleGraphPageState extends State<LifestyleGraphPage> {
       } else if (_selectedMetric == 'Tidur' && item.sleep != null) {
         value = item.sleep!;
         if (value > maxY) maxY = value + 2;
+      } else if (_selectedMetric == 'Kalori' && item.step != null) {
+        value = item.step! * 0.04;
+        if (value > maxY) maxY = value + (value * 0.2);
       }
 
       if (value != null) {
@@ -310,7 +412,9 @@ class _LifestyleGraphPageState extends State<LifestyleGraphPage> {
                 return Text(
                   _selectedMetric == 'Langkah' 
                       ? '${(value / 1000).toStringAsFixed(1)}k' 
-                      : value.toInt().toString(),
+                      : _selectedMetric == 'Kalori'
+                          ? '${value.toInt()} Kkal'
+                          : value.toInt().toString(),
                   style: const TextStyle(color: AppColors.textHint, fontSize: 10),
                 );
               },
@@ -329,7 +433,7 @@ class _LifestyleGraphPageState extends State<LifestyleGraphPage> {
             color: AppColors.primary,
             barWidth: 3,
             isStrokeCapRound: true,
-            dotData: const FlDotData(show: true),
+            dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
               color: AppColors.primary.withOpacity(0.15),

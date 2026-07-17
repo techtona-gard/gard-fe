@@ -24,7 +24,8 @@ class _ActivityPageState extends State<ActivityPage> {
   bool _isCalendarSignedIn = false;
   bool _isLoadingEvents = false;
   bool _isCheckingSignIn = true;
-  bool _showAllEvents = false; // For limiting event list to 4
+  bool _showAllEvents = false;
+  CalendarFormat _calendarFormat = CalendarFormat.week;
 
   List<CalendarEvent> _eventsForSelectedDay = [];
   Map<DateTime, List<CalendarEvent>> _allEventsCache = {};
@@ -758,36 +759,43 @@ class _ActivityPageState extends State<ActivityPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header ──────────────────────────────────────────────────────
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
-              decoration: const BoxDecoration(
-                gradient: AppColors.primaryGradient,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(40),
-                  bottomRight: Radius.circular(40),
-                ),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Aktivitas & Jadwal',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+            SafeArea(
+              bottom: false,
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.15),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Sinkronisasi aktivitas dengan Google Calendar',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
+                  ],
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Aktivitas & Jadwal',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Sinkronisasi aktivitas dengan Google Calendar',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.softAccent, fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
             ),
 
@@ -796,21 +804,6 @@ class _ActivityPageState extends State<ActivityPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Google Calendar Banner / Connected badge ─────────────
-                  if (_isCheckingSignIn)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: CircularProgressIndicator(color: AppColors.primary),
-                      ),
-                    )
-                  else if (!_isCalendarSignedIn)
-                    _buildConnectBanner()
-                  else
-                    _buildConnectedBadge(),
-
-                  const SizedBox(height: 16),
-
                   // ── Calendar Widget ──────────────────────────────────────
                   Container(
                     decoration: BoxDecoration(
@@ -829,6 +822,12 @@ class _ActivityPageState extends State<ActivityPage> {
                       firstDay: DateTime.utc(2020, 1, 1),
                       lastDay: DateTime.utc(2030, 12, 31),
                       focusedDay: _focusedDay,
+                      calendarFormat: _calendarFormat,
+                      availableCalendarFormats: const {
+                        CalendarFormat.month: 'Bulan',
+                        CalendarFormat.week: 'Minggu',
+                      },
+                      onFormatChanged: (format) => setState(() => _calendarFormat = format),
                       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                       eventLoader: _isCalendarSignedIn ? _getEventsForDay : null,
                       onDaySelected: (selectedDay, focusedDay) {
@@ -852,14 +851,14 @@ class _ActivityPageState extends State<ActivityPage> {
                         markerBuilder: (context, day, events) {
                           if (events.isEmpty) return const SizedBox.shrink();
                           return Positioned(
-                            bottom: 2,
+                            bottom: 0,
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: events
                                   .take(3)
                                   .map((_) => Container(
-                                        width: 5,
-                                        height: 5,
+                                        width: 4,
+                                        height: 4,
                                         margin: const EdgeInsets.symmetric(horizontal: 1.5),
                                         decoration: const BoxDecoration(
                                           color: AppColors.primary,
@@ -926,30 +925,44 @@ class _ActivityPageState extends State<ActivityPage> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text(
-                        'PENGINGAT MAKAN HARIAN',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textSecondary,
-                          letterSpacing: 1.2,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'PENGINGAT MAKAN HARIAN',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textSecondary,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            Text(
+                              () {
+                                final d = _selectedDay ?? _focusedDay;
+                                const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+                                return '${days[d.weekday - 1]}, ${d.day} ${months[d.month - 1]}';
+                              }(),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textHint,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const Spacer(),
-                      // Tombol generate AI schedule
+                      // AI schedule generator button
                       GestureDetector(
                         onTap: _generateAiSchedule,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                AppColors.primary,
-                                AppColors.midTeal,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -965,7 +978,7 @@ class _ActivityPageState extends State<ActivityPage> {
                                 )
                               else
                                 Image.asset(
-                                  'assets/images/logo_icon.png',
+                                  'assets/images/logo_full_square.png',
                                   width: 12,
                                   height: 12,
                                   color: Colors.white,
@@ -1002,38 +1015,19 @@ class _ActivityPageState extends State<ActivityPage> {
                       decoration: BoxDecoration(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Image.asset(
-                                  'assets/images/logo_icon.png',
-                                  width: 14,
-                                  height: 14,
-                                  color: Colors.white,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.auto_awesome_rounded,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                              Image.asset(
+                                'assets/images/logo_full_square.png',
+                                width: 16,
+                                height: 16,
+                                color: AppColors.softAccent,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.auto_awesome_rounded, size: 16, color: AppColors.softAccent),
                               ),
-                              const SizedBox(width: 8),
                               const Expanded(
                                 child: Text(
                                   'Rekomendasi Jadwal Makan AI',
@@ -1044,12 +1038,6 @@ class _ActivityPageState extends State<ActivityPage> {
                                   ),
                                 ),
                               ),
-                              GestureDetector(
-                                onTap: () =>
-                                    setState(() => _aiScheduleResult = null),
-                                child: const Icon(Icons.close_rounded,
-                                    size: 16, color: Colors.white),
-                              ),
                             ],
                           ),
                           const SizedBox(height: 10),
@@ -1057,7 +1045,7 @@ class _ActivityPageState extends State<ActivityPage> {
                             _aiScheduleResult!,
                             style: const TextStyle(
                               fontSize: 13,
-                              color: Colors.white,
+                              color: AppColors.softAccent,
                               height: 1.6,
                             ),
                           ),
@@ -1107,7 +1095,7 @@ class _ActivityPageState extends State<ActivityPage> {
                             _expandedMealIndex = isExpanded ? null : index;
                           });
                         },
-                        imageAsset: 'assets/images/logo_icon.png',
+                        imageAsset: 'assets/images/logo_full_square.png',
                       );
                     }).toList()
                   else ...[
@@ -1159,7 +1147,7 @@ class _ActivityPageState extends State<ActivityPage> {
                             _expandedMealIndex = isExpanded ? null : index;
                           });
                         },
-                        imageAsset: 'assets/images/logo_icon.png',
+                        imageAsset: 'assets/images/logo_full_square.png',
                       );
                     }).toList()
                   ],
@@ -1473,20 +1461,32 @@ class _ActivityPageState extends State<ActivityPage> {
               ),
             ),
             // Edit button
-            IconButton(
-              onPressed: () => _showEventForm(event: event),
-              icon: const Icon(Icons.edit_rounded, size: 18, color: AppColors.primary),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: () => _showEventForm(event: event),
+                icon: const Icon(Icons.edit_rounded, size: 16, color: AppColors.primary),
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
             ),
             const SizedBox(width: 8),
             // Delete button
-            IconButton(
-              onPressed: () => _confirmDeleteEvent(event),
-              icon: const Icon(Icons.delete_outline_rounded,
-                  size: 18, color: AppColors.error),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: () => _confirmDeleteEvent(event),
+                icon: const Icon(Icons.delete_outline_rounded,
+                    size: 16, color: AppColors.error),
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(),
+              ),
             ),
           ],
         ),
@@ -1550,13 +1550,20 @@ class _ActivityPageState extends State<ActivityPage> {
                         color: Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      time,
-                      style: const TextStyle(
-                        color: Colors.black38,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.mintLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        time,
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],

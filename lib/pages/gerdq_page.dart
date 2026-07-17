@@ -204,15 +204,10 @@ class _GerdQPageState extends State<GerdQPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 24),
-              SizedBox(
+              Image.asset(
+                'assets/images/gerdQ-icon.png',
                 height: 140,
-                width: 100,
-                child: CustomPaint(
-                  painter: TorsoPainter(
-                    highlightArea: currentQ['highlight'],
-                    highlightColor: emeraldGreen,
-                  ),
-                ),
+                fit: BoxFit.contain,
               ),
               const SizedBox(height: 20),
               Container(
@@ -319,26 +314,6 @@ class _GerdQPageState extends State<GerdQPage> {
                                   color: isSelected
                                       ? emeraldGreen
                                       : Colors.black87,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? emeraldGreen
-                                    : Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '+$pts poin',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.grey.shade600,
                                 ),
                               ),
                             ),

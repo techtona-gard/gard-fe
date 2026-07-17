@@ -63,28 +63,35 @@ class _HistoryPageState extends State<HistoryPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Header ──────────────────────────────────────────────────
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
-                      decoration: const BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(32),
-                          bottomRight: Radius.circular(32),
+                    SafeArea(
+                      bottom: false,
+                      child: Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.15),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
-                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
                             'Rekam Medis',
                             style: TextStyle(
-                                color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                                color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
                           const Text(
                             'Catatan perjalanan kesehatan Anda',
-                            style: TextStyle(color: Colors.white60, fontSize: 13),
+                            style: TextStyle(color: AppColors.softAccent, fontSize: 13),
                           ),
                           const SizedBox(height: 20),
                           // Stat pills row
@@ -94,11 +101,12 @@ class _HistoryPageState extends State<HistoryPage> {
                               const SizedBox(width: 10),
                               _buildHeaderStatPill(null, '0', 'Konsultasi'),
                               const SizedBox(width: 10),
-                              _buildHeaderStatPill(Icons.favorite_rounded, 'Sedang', 'Kondisi'),
+                              _buildHeaderStatPill(null, 'Sedang', 'Kondisi'),
                             ],
                           ),
                         ],
                       ),
+                    ),
                     ),
 
                     Padding(
@@ -159,11 +167,50 @@ class _HistoryPageState extends State<HistoryPage> {
                             if (_selectedFilter == 'Deteksi') return item.category.toUpperCase() == 'DETEKSI' && !isSos;
                             return item.category.toUpperCase() == _selectedFilter.toUpperCase();
                           }).isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.all(20.0),
-                              child: Center(
-                                child: Text('Belum ada riwayat medis.',
-                                  style: TextStyle(color: AppColors.textSecondary)),
+                            Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.12),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    )
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.history_rounded,
+                                      color: AppColors.softAccent,
+                                      size: 36,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    const Text(
+                                      'Belum ada riwayat medis.',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'Aktivitas rekam medis Anda akan muncul di sini',
+                                      style: TextStyle(
+                                        color: AppColors.softAccent,
+                                        fontSize: 11,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
                               ),
                             )
                           else
@@ -224,12 +271,13 @@ class _HistoryPageState extends State<HistoryPage> {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(14),
+          width: 46,
+          height: 46,
+          decoration: const BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.sos_rounded, color: AppColors.primary, size: 24),
+          child: const Center(child: Icon(Icons.sos_rounded, color: AppColors.softAccent, size: 20)),
         ),
         title: const Text(
           'SOS Darurat Dikirim',
@@ -265,15 +313,15 @@ class _HistoryPageState extends State<HistoryPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: AppColors.darkAccent.withOpacity(0.4),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withOpacity(0.15)),
         ),
         child: Row(
           mainAxisAlignment: icon == null ? MainAxisAlignment.center : MainAxisAlignment.start,
           children: [
             if (icon != null) ...[
-              Icon(icon, color: Colors.white70, size: 14),
+              Icon(icon, color: AppColors.softAccent, size: 14),
               const SizedBox(width: 6),
             ],
             Column(
@@ -285,7 +333,7 @@ class _HistoryPageState extends State<HistoryPage> {
                         fontSize: 13,
                         fontWeight: FontWeight.bold)),
                 Text(label,
-                    style: const TextStyle(color: Colors.white60, fontSize: 10)),
+                    style: const TextStyle(color: AppColors.softAccent, fontSize: 10)),
               ],
             ),
           ],
@@ -350,11 +398,11 @@ class _HistoryPageState extends State<HistoryPage> {
             Container(
               width: 46,
               height: 46,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
-              child: Center(child: Icon(_getCategoryIcon(item.category), color: AppColors.primary, size: 20)),
+              child: Center(child: Icon(_getCategoryIcon(item.category), color: AppColors.softAccent, size: 20)),
             ),
             const SizedBox(width: 14),
             // Content

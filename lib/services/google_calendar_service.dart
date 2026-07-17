@@ -57,18 +57,16 @@ class GoogleCalendarService {
 
   SupabaseClient get _client => Supabase.instance.client;
 
-  /// Persist token when a new session arrives (call this from auth listener)
+  /// Persist Google OAuth token from auth listener
   Future<void> persistProviderToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefKey, token);
-    debugPrint('Calendar: providerToken persisted (${token.length} chars)');
   }
 
   /// Clear persisted token on logout
   Future<void> clearPersistedToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefKey);
-    debugPrint('Calendar: providerToken cleared');
   }
 
   /// Returns true if we have any valid Google token
@@ -78,26 +76,16 @@ class GoogleCalendarService {
         (session.providerToken?.isNotEmpty ?? false);
   }
 
-  /// Get the Google access token — prefers live session token,
-  /// falls back to persisted SharedPreferences token.
+  /// Returns live session token, falls back to persisted SharedPreferences token
   Future<String?> getStoredToken() async {
-    // 1. Try live session token first
     final liveToken = _client.auth.currentSession?.providerToken;
     if (liveToken != null && liveToken.isNotEmpty) {
-      // Also persist it while we have it
       await persistProviderToken(liveToken);
       return liveToken;
     }
-
-    // 2. Fall back to persisted token
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_prefKey);
-    if (stored != null && stored.isNotEmpty) {
-      debugPrint('Calendar: using persisted providerToken');
-      return stored;
-    }
-
-    debugPrint('Calendar: No providerToken available');
+    if (stored != null && stored.isNotEmpty) return stored;
     return null;
   }
 
@@ -133,7 +121,6 @@ class GoogleCalendarService {
     );
 
     final response = await http.get(uri, headers: headers);
-    debugPrint('getEventsForMonth status: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -168,7 +155,6 @@ class GoogleCalendarService {
     );
 
     final response = await http.get(uri, headers: headers);
-    debugPrint('getEventsForDay status: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);

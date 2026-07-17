@@ -233,7 +233,7 @@ class _DoctorVerificationPageState extends State<DoctorVerificationPage> {
                     const SizedBox(height: 32),
                     _buildInputField('NAMA LENGKAP & GELAR *', 'Dr. Budi Santoso, Sp.PD'),
                     _buildInputField('NO. SURAT TANDA REGISTRASI (STR) *', '1234567890'),
-                    _buildInputField('NO. SURAT IZIN PRAKTIK (SIP) *', 'SIP/2024/001'),
+                    _buildInputField('NO. SURAT IZIN PRAKTIK (SIP) *', 'SIP/2026/001'),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,

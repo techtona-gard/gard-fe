@@ -169,11 +169,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                   ),
                   child: Column(
                     children: [
-                      // Logo icon
+                      // Logo full
                       Image.asset(
-                        'assets/images/logo_icon.png',
-                        width: 48,
-                        height: 48,
+                        'assets/images/logo_full.png',
+                        width: 100,
+                        height: 50,
+                        fit: BoxFit.contain,
                       ),
                       const SizedBox(height: 16),
                       const Text(

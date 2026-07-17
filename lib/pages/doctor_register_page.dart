@@ -166,7 +166,7 @@ class _DoctorRegisterPageState extends State<DoctorRegisterPage> {
               ),
               const SizedBox(height: 40),
               const Text(
-                'GARD PLATFORM © 2024',
+                'GARD PLATFORM © 2026',
                 style: TextStyle(color: Colors.grey, fontSize: 10, letterSpacing: 1),
               ),
             ],

@@ -109,6 +109,7 @@ class MyApp extends StatelessWidget {
       title: 'Gard',
       theme: ThemeData(
         useMaterial3: true,
+        fontFamily: 'Plus Jakarta Sans',
         primaryColor: AppColors.primary,
         scaffoldBackgroundColor: AppColors.background,
         colorScheme: ColorScheme.fromSeed(

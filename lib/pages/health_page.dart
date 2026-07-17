@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gard/constants/app_colors.dart';
 import 'package:gard/services/health_connect_service.dart';
 import 'package:gard/services/health_sync_service.dart';
+import 'package:gard/pages/lifestyle_graph_page.dart';
 
 class HealthPage extends StatefulWidget {
   const HealthPage({super.key});
@@ -112,102 +113,7 @@ class _HealthPageState extends State<HealthPage> {
       ),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator(color: primaryGard))
-        : SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!_isConnected)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 20),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.warning_amber_rounded, color: AppColors.error),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'Gagal mengambil data. Pastikan izin Health Connect diberikan.',
-                          style: TextStyle(color: AppColors.error, fontSize: 13),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: _initHealthConnect,
-                        child: const Text('COBA LAGI'),
-                      )
-                    ],
-                  ),
-                ),
-                
-              const Text(
-                'Grafik Aktivitas Mingguan',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryGard),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                height: 200,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-                ),
-                child: const Center(
-                  child: Icon(Icons.bar_chart_rounded, size: 100, color: primaryGard),
-                ),
-              ),
-              const SizedBox(height: 30),
-              _buildStatTile('Kalori Terbakar', caloriesText, Icons.local_fire_department_rounded, Colors.orange),
-              _buildStatTile('Kualitas Tidur', sleepText, Icons.bedtime_rounded, primaryGard),
-              _buildStatTile('Aktivitas Fisik', stepsText, Icons.directions_walk_rounded, primaryGard),
-            ],
-          ),
-        ),
-    );
-  }
-
-  Widget _buildStatTile(String title, String subtitle, IconData icon, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-              ],
-            ),
-          ),
-        ],
-      ),
+        : const LifestyleGraphPage(),
     );
   }
 }

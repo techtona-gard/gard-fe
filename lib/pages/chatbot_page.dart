@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gard/constants/app_colors.dart';
 import 'package:gard/services/agent_service.dart';
@@ -7,6 +8,7 @@ import 'package:gard/services/health_connect_service.dart';
 import 'package:gard/main.dart';
 import 'package:gard/pages/camera_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ChatbotPage extends StatefulWidget {
   final String? capturedImagePath;
@@ -192,78 +194,37 @@ class _ChatbotPageState extends State<ChatbotPage> {
     });
   }
 
-  void _showUploadMenu() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 24),
-            const Text('Unggah Media Medis',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildUploadOption(Icons.camera_alt_rounded, 'Kamera', AppColors.primary, () {
-                  Navigator.pop(context);
-                  if (cameras.isNotEmpty) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => CameraPage(camera: cameras.first)),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Kamera tidak tersedia')),
-                    );
-                  }
-                }),
-                _buildUploadOption(Icons.photo_library_rounded, 'Galeri', AppColors.darkAccent, () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Fitur galeri segera hadir! Silakan gunakan kamera.')),
-                  );
-                }),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
+        final base64String = base64Encode(bytes);
+        _addImageMessage(pickedFile.path, base64: base64String);
+      }
+    } catch (e) {
+      debugPrint('Error picking image from gallery: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat gambar: $e')),
+        );
+      }
+    }
   }
 
-  Widget _buildUploadOption(IconData icon, String label, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration:
-                BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: 12),
-          Text(label,
-              style:
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-        ],
-      ),
-    );
+  void _openCamera() {
+    if (cameras.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => CameraPage(camera: cameras.first)),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kamera tidak tersedia')),
+      );
+    }
   }
 
   Widget _buildAnalysisCard(Map<String, dynamic> analysis) {
@@ -594,14 +555,26 @@ class _ChatbotPageState extends State<ChatbotPage> {
             child: Row(
               children: [
                 GestureDetector(
-                  onTap: _showUploadMenu,
+                  onTap: _openCamera,
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: const BoxDecoration(
                         color: AppColors.primary,
                         shape: BoxShape.circle),
-                    child: const Icon(Icons.add_rounded,
-                        color: Colors.white, size: 24),
+                    child: const Icon(Icons.camera_alt_rounded,
+                        color: Colors.white, size: 22),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _pickImageFromGallery,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle),
+                    child: const Icon(Icons.photo_library_rounded,
+                        color: AppColors.primary, size: 22),
                   ),
                 ),
                 const SizedBox(width: 12),

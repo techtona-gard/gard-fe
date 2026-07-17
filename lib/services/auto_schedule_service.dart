@@ -10,86 +10,69 @@ class AutoScheduleService {
   static final AutoScheduleService instance = AutoScheduleService._init();
   AutoScheduleService._init();
 
-  /// Memeriksa dan membuat jadwal makan rekomendasi AI untuk besok secara otomatis
-  /// jika waktu saat ini sudah jam 23.59 (atau di atas 23.50) dan belum pernah dibuat sebelumnya.
+  /// Auto-generates tomorrow's AI meal schedule at 23:50–23:59 if not yet generated.
+  /// Saves to SharedPreferences, Google Calendar, and schedules notifications.
   Future<void> checkAndGenerateTomorrowSchedule() async {
     final now = DateTime.now();
-    
-    // Cek apakah sekarang sudah pukul 23:50 ke atas
-    if (now.hour == 23 && now.minute >= 50) {
-      final tomorrow = now.add(const Duration(days: 1));
-      final tomorrowStr =
-          '${tomorrow.year}-${tomorrow.month.toString().padLeft(2, '0')}-${tomorrow.day.toString().padLeft(2, '0')}';
+    if (now.hour != 23 || now.minute < 50) return;
 
-      final prefs = await SharedPreferences.getInstance();
-      final alreadyGenerated = prefs.getString('ai_schedule_$tomorrowStr') != null;
+    final tomorrow = now.add(const Duration(days: 1));
+    final tomorrowStr =
+        '${tomorrow.year}-${tomorrow.month.toString().padLeft(2, '0')}-${tomorrow.day.toString().padLeft(2, '0')}';
 
-      if (alreadyGenerated) {
-        debugPrint("AutoScheduleService: Jadwal makan besok ($tomorrowStr) sudah ada.");
-        return;
-      }
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getString('ai_schedule_$tomorrowStr') != null) return;
 
-      debugPrint("AutoScheduleService: Memulai auto-generate jadwal makan untuk besok ($tomorrowStr).");
-      try {
-        final profile = await SupabaseService.instance.getProfileData();
-        final email = profile?['email'] ?? 'anonymous';
+    try {
+      final profile = await SupabaseService.instance.getProfileData();
+      final email = profile?['email'] ?? 'anonymous';
 
-        final result = await AgentService.instance.generateSchedule(
-          userId: email,
-          date: tomorrow,
-          profileData: profile,
-        );
+      final result = await AgentService.instance.generateSchedule(
+        userId: email,
+        date: tomorrow,
+        profileData: profile,
+      );
 
-        if (result.success && result.events.isNotEmpty) {
-          // 1. Simpan secara lokal (versi full baru dengan ai_message)
-          final Map<String, dynamic> fullData = {
-            'events': result.events,
-            'ai_message': result.scheduleText,
-          };
-          await prefs.setString('ai_schedule_full_$tomorrowStr', jsonEncode(fullData));
-          
-          // Tetap simpan legacy key agar kompatibel
-          await prefs.setString('ai_schedule_$tomorrowStr', jsonEncode(result.events));
-          debugPrint("AutoScheduleService: Jadwal makan berhasil disimpan di preferences.");
+      if (result.success && result.events.isNotEmpty) {
+        // Save full payload (events + AI message)
+        final fullData = {
+          'events': result.events,
+          'ai_message': result.scheduleText,
+        };
+        await prefs.setString('ai_schedule_full_$tomorrowStr', jsonEncode(fullData));
+        await prefs.setString('ai_schedule_$tomorrowStr', jsonEncode(result.events));
 
-          // 2. Tambahkan ke Google Calendar jika terhubung
-          final googleCalendarService = GoogleCalendarService.instance;
-          final hasAccess = await googleCalendarService.getStoredToken() != null;
-          if (hasAccess) {
-            for (final event in result.events) {
-              try {
-                final start = DateTime.parse(event['start_time']).toLocal();
-                final end = DateTime.parse(event['end_time']).toLocal();
-                await googleCalendarService.createEvent(
-                  title: event['summary'] ?? 'Jadwal Makan AI',
-                  description: event['description'],
-                  startTime: start,
-                  endTime: end,
-                );
-              } catch (calErr) {
-                debugPrint('AutoScheduleService (Google Calendar) Error: $calErr');
-              }
-            }
-            debugPrint("AutoScheduleService: Jadwal makan dimasukkan ke Google Calendar.");
-          }
-
-          // 3. Daftarkan notifikasi alarm
+        // Add events to Google Calendar if connected
+        final googleCalendarService = GoogleCalendarService.instance;
+        if (await googleCalendarService.getStoredToken() != null) {
           for (final event in result.events) {
             try {
               final start = DateTime.parse(event['start_time']).toLocal();
-              await NotificationService.scheduleEatingReminderAt(
-                title: 'GARD: ${event['summary']} 🥣',
-                body: event['description'] ?? 'Waktunya makan rekomendasi AI.',
-                scheduledTime: start,
+              final end = DateTime.parse(event['end_time']).toLocal();
+              await googleCalendarService.createEvent(
+                title: event['summary'] ?? 'Jadwal Makan AI',
+                description: event['description'],
+                startTime: start,
+                endTime: end,
               );
-            } catch (notifErr) {
-              debugPrint('AutoScheduleService (Notification) Error: $notifErr');
-            }
+            } catch (_) {}
           }
         }
-      } catch (e) {
-        debugPrint("AutoScheduleService error: $e");
+
+        // Schedule meal reminder notifications
+        for (final event in result.events) {
+          try {
+            final start = DateTime.parse(event['start_time']).toLocal();
+            await NotificationService.scheduleEatingReminderAt(
+              title: 'GARD: ${event['summary']} 🥣',
+              body: event['description'] ?? 'Waktunya makan rekomendasi AI.',
+              scheduledTime: start,
+            );
+          } catch (_) {}
+        }
       }
+    } catch (e) {
+      debugPrint('AutoScheduleService error: $e');
     }
   }
 }

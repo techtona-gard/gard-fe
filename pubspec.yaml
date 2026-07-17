@@ -50,6 +50,7 @@ dependencies:
   flutter_phone_direct_caller: ^2.2.1
   app_links: ^7.2.1
   fl_chart: ^1.2.0
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +79,10 @@ flutter:
     - assets/images/logo_full.png
     - assets/images/logo_full.jpeg
     - assets/images/logo_icon.png
+    - assets/images/gerdQ.png
+    - assets/images/gerdQ-icon.png
+    - assets/images/logo_full_square.png
+    - assets/images/logo_full_square_bg.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -112,5 +117,5 @@ dependency_overrides:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/logo_icon.png"
+  image_path: "assets/images/logo_full_square_bg.png"
   min_sdk_android: 21

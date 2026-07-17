@@ -126,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
                 // ── Form Card ────────────────────────────────────────────────
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(32),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
                   decoration: BoxDecoration(
                     color: AppColors.card,
                     borderRadius: BorderRadius.circular(28),
@@ -140,7 +140,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   child: Column(
                     children: [
-                      const SizedBox(height: 4),
                       const Text(
                         'Selamat Datang',
                         style: TextStyle(
@@ -149,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                           color: AppColors.darkAccent,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       const Text(
                         'Masuk dengan akun Google Anda untuk\nmemulai pemantauan kesehatan lambung.',
                         textAlign: TextAlign.center,
@@ -159,8 +158,7 @@ class _LoginPageState extends State<LoginPage> {
                           height: 1.6,
                         ),
                       ),
-
-                      const SizedBox(height: 36),
+                      const SizedBox(height: 32),
 
                       // ── Sign in with Google Button ──────────────────────────
                       SizedBox(
@@ -190,8 +188,11 @@ class _LoginPageState extends State<LoginPage> {
                               : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    // Google G logo colors
-                                    _GoogleIcon(),
+                                    Image.asset(
+                                      'assets/images/logo_icon.png',
+                                      width: 22,
+                                      height: 22,
+                                    ),
                                     const SizedBox(width: 12),
                                     const Text(
                                       'Masuk dengan Google',
@@ -209,47 +210,6 @@ class _LoginPageState extends State<LoginPage> {
 
 
 
-                      const SizedBox(height: 28),
-
-                      // ── Divider ────────────────────────────────────────────
-                      const Row(
-                        children: [
-                          Expanded(
-                              child: Divider(
-                                  color: AppColors.softAccent, thickness: 1)),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'AKSES PLATFORM',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                              child: Divider(
-                                  color: AppColors.softAccent, thickness: 1)),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      _buildAccessRule(
-                        icon: Icons.person_outline_rounded,
-                        title: 'Pengguna Umum',
-                        desc: 'Gunakan akun Google untuk akses cepat.',
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildAccessRule(
-                        icon: Icons.medical_services_outlined,
-                        title: 'Tenaga Medis',
-                        desc: 'Akses khusus pemantauan pasien.',
-                        color: AppColors.darkAccent,
-                      ),
                     ],
                   ),
                 ),
@@ -300,7 +260,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(width: 6),
                     const Text(
-                      'GARD · Gerd Guard © 2024',
+                      'GARD · Gerd Guard © 2026',
                       style: TextStyle(
                         color: AppColors.textHint,
                         fontSize: 11,

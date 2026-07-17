@@ -139,7 +139,7 @@ class NotificationService {
           autoDismissible: false,
           locked: true,
           backgroundColor: const Color(0xFF364E4F),
-          largeIcon: 'asset://assets/images/logo_icon.png',
+          largeIcon: 'asset://assets/images/logo_full_square.png',
         ),
         actionButtons: [
           NotificationActionButton(
@@ -194,7 +194,7 @@ class NotificationService {
           autoDismissible: false,
           locked: true,
           backgroundColor: const Color(0xFF364E4F),
-          largeIcon: 'asset://assets/images/logo_icon.png',
+          largeIcon: 'asset://assets/images/logo_full_square.png',
         ),
         actionButtons: [
           NotificationActionButton(
