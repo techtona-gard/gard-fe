@@ -13,13 +13,13 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  String name = "Brawidya Puja Dharma";
-  String height = "175";
-  String weight = "70";
-  String emergencyContact = "081272733891";
-  String gerdStatus = "Resiko Rendah";
-  String email = "brawidya12@gmail.com";
-  String birthDate = "12 Agustus 1998";
+  String name = "Pengguna";
+  String height = "-";
+  String weight = "-";
+  String emergencyContact = "-";
+  String gerdStatus = "Belum Dites";
+  String email = "";
+  String birthDate = "-";
   bool _isLoading = true;
 
   @override
@@ -38,7 +38,7 @@ class _ProfilePageState extends State<ProfilePage> {
         height = data['height'] ?? height;
         weight = data['weight'] ?? weight;
         birthDate = data['birth_date'] ?? birthDate;
-        emergencyContact = data['emergency_contact'] ?? emergencyContact;
+        emergencyContact = data['emergency_wa'] ?? emergencyContact;
         gerdStatus = data['gerd_status'] ?? gerdStatus;
       });
     }
@@ -108,12 +108,16 @@ class _ProfilePageState extends State<ProfilePage> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginPage()),
-                    (route) => false,
-                  );
+                onPressed: () async {
+                  // Show loading or just sign out
+                  await SupabaseService.instance.signOut();
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                      (route) => false,
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -180,12 +184,10 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() => _isLoading = true);
       try {
         await SupabaseService.instance.saveProfile(
-          height: double.tryParse(newHeight) ?? 175,
-          weight: double.tryParse(newWeight) ?? 70,
+          height: num.tryParse(newHeight) ?? 175,
+          weight: num.tryParse(newWeight) ?? 70,
           birthDate: newBirthDate,
-          name: newName,
-          email: newEmail,
-          emergencyContact: newEmergencyContact,
+          emergencyWa: newEmergencyContact,
         );
         setState(() {
           name = newName;

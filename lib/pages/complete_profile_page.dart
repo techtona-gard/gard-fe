@@ -3,6 +3,7 @@ import 'package:gard/constants/app_colors.dart';
 import 'package:gard/main.dart';
 import 'package:gard/services/supabase_service.dart';
 import 'package:gard/pages/login_page.dart';
+import 'package:gard/pages/gerdq_page.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   const CompleteProfilePage({super.key});
@@ -16,6 +17,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
   final _heightCtrl = TextEditingController();
   final _weightCtrl = TextEditingController();
   final _birthDateCtrl = TextEditingController();
+  final _emergencyWaCtrl = TextEditingController();
   DateTime? _selectedBirthDate;
 
   bool _isSaving = false;
@@ -32,6 +34,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     _heightCtrl.dispose();
     _weightCtrl.dispose();
     _birthDateCtrl.dispose();
+    _emergencyWaCtrl.dispose();
     super.dispose();
   }
 
@@ -57,13 +60,14 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     setState(() => _isSaving = true);
 
     try {
-      final height = double.parse(_heightCtrl.text);
-      final weight = double.parse(_weightCtrl.text);
+      final height = num.parse(_heightCtrl.text);
+      final weight = num.parse(_weightCtrl.text);
 
       await SupabaseService.instance.saveProfile(
         height: height,
         weight: weight,
-        birthDate: _birthDateCtrl.text,
+        birthDate: "${_selectedBirthDate!.year}-${_selectedBirthDate!.month.toString().padLeft(2, '0')}-${_selectedBirthDate!.day.toString().padLeft(2, '0')}",
+        emergencyWa: _emergencyWaCtrl.text,
       );
 
       if (mounted) {
@@ -82,10 +86,10 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           ),
         );
 
-        // Redirect to Main Dashboard
+        // Redirect to GerdQ questionnaire before entering main app
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
+          MaterialPageRoute(builder: (context) => const GerdQPage()),
         );
       }
     } catch (e) {
@@ -293,6 +297,21 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                                 if (!_isAtLeast13YearsOld(_selectedBirthDate!)) {
                                   return 'Minimal usia adalah 13 tahun';
                                 }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 16),
+                            
+                            // Emergency WA Field
+                            _buildTextField(
+                              controller: _emergencyWaCtrl,
+                              label: 'No. WA Darurat (Emergency)',
+                              icon: Icons.phone_rounded,
+                              keyboardType: TextInputType.phone,
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return 'No. WA Darurat wajib diisi';
+                                if (v.length < 9) return 'No. WA tidak valid';
                                 return null;
                               },
                             ),

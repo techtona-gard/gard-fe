@@ -10,6 +10,7 @@ import 'package:gard/services/notification_service.dart';
 import 'package:gard/services/sos_service.dart';
 import 'package:gard/constants/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:app_links/app_links.dart';
 
 List<CameraDescription> cameras = [];
 
@@ -18,12 +19,15 @@ Future<void> main() async {
 
   try {
     await Supabase.initialize(
-      url: const String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://placeholder.supabase.co'),
-      anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'placeholder_key'),
+      url: const String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://auqzdznuffaldjrriepv.supabase.co'),
+      anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1cXpkem51ZmZhbGRqcnJpZXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxOTA3MTMsImV4cCI6MjA5OTc2NjcxM30.gIJ-1w8rAzlKuEYPSOo-DMfqZkY-h89mRHNCrZzQjLE'),
     );
   } catch (e) {
     debugPrint("Supabase initialization failed: $e");
   }
+
+  // Setup deep link listener to handle gardapp://login-callback from Google OAuth
+  _setupDeepLinks();
 
   try {
     await NotificationService.initializeNotification();
@@ -39,6 +43,20 @@ Future<void> main() async {
 
   runApp(const MyApp());
 }
+
+void _setupDeepLinks() {
+  final appLinks = AppLinks();
+  appLinks.uriLinkStream.listen((uri) async {
+    debugPrint("Deep link received: $uri");
+    // Let supabase_flutter handle the OAuth callback URI
+    try {
+      await Supabase.instance.client.auth.getSessionFromUrl(uri);
+    } catch (e) {
+      debugPrint("Error processing deep link: $e");
+    }
+  });
+}
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

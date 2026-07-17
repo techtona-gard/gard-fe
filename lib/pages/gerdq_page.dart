@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gard/constants/app_colors.dart';
+import 'package:gard/main.dart';
+import 'package:gard/services/supabase_service.dart';
 
 class GerdQPage extends StatefulWidget {
   const GerdQPage({super.key});
@@ -68,7 +70,7 @@ class _GerdQPageState extends State<GerdQPage> {
     });
   }
 
-  void _showResult() {
+  Future<void> _showResult() async {
     int totalScore = 0;
     for (int i = 0; i < _questions.length; i++) {
       int score = 0;
@@ -81,12 +83,33 @@ class _GerdQPageState extends State<GerdQPage> {
       totalScore += score;
     }
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => GerdQResultPage(score: totalScore),
+    bool isHighRisk = totalScore >= 8;
+    String statusGerd = isHighRisk ? 'Tinggi' : 'Rendah';
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
       ),
     );
+
+    try {
+      await SupabaseService.instance.saveGerdStatus(statusGerd);
+    } catch (e) {
+      debugPrint("Error saving gerd status: $e");
+    }
+
+    if (mounted) {
+      Navigator.pop(context); // Close loading dialog
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => GerdQResultPage(score: totalScore),
+        ),
+      );
+    }
   }
 
   @override
@@ -445,13 +468,16 @@ class GerdQResultPage extends StatelessWidget {
                 width: double.infinity,
                 height: 56,
                 child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MainNavigation()),
+                  ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: emeraldGreen, width: 2),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     foregroundColor: emeraldGreen,
                   ),
-                  child: const Text('Kembali ke Beranda', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: const Text('Masuk ke Beranda', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
             ],

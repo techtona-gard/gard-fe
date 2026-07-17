@@ -14,6 +14,7 @@ import 'package:gard/services/sos_history_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:gard/constants/app_colors.dart';
+import 'package:gard/services/supabase_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -26,10 +27,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   late AnimationController _sosController;
   bool _isSosHolding = false;
   Map<String, dynamic>? _healthSummary;
+  Map<String, dynamic>? _profileData;
 
   @override
   void initState() {
     super.initState();
+    _loadProfileData();
     _loadHealthData();
     _sosController = AnimationController(
       vsync: this,
@@ -49,6 +52,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   void dispose() {
     _sosController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProfileData() async {
+    final data = await SupabaseService.instance.getProfileData();
+    if (mounted) {
+      setState(() {
+        _profileData = data;
+      });
+    }
   }
 
   Future<void> _loadHealthData() async {
@@ -128,8 +140,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     setState(() => _isSosHolding = false);
     _sosController.reset();
 
+    final emergencyNumber = _profileData?['emergency_wa'] ?? '';
+    
     // 1️⃣ Log SOS ke riwayat (in-memory, langsung)
-    SosHistoryService().addEvent(number: '081280295818');
+    SosHistoryService().addEvent(number: emergencyNumber.isNotEmpty ? emergencyNumber : '081280295818');
 
     // 2️⃣ Kirim pesan WA di background (fire-and-forget, tidak menunggu)
     // _sendFonnteWhatsApp(); // DIMATIKAN SEMENTARA AGAR API TIDAK HABIS
@@ -139,7 +153,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       final status = await Permission.phone.request();
       if (status.isGranted) {
         const platform = MethodChannel('com.gard.sos/call');
-        await platform.invokeMethod('directCall', {'number': '081280295818'});
+        if (emergencyNumber.isNotEmpty) {
+          await platform.invokeMethod('directCall', {'number': emergencyNumber});
+        }
       } else {
         debugPrint('Izin telepon ditolak oleh pengguna.');
       }
@@ -234,12 +250,20 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                               radius: 24,
                               backgroundColor: AppColors.softAccent,
                               child: ClipOval(
-                                child: Image.asset(
-                                  'assets/images/logo_icon.png',
-                                  width: 36,
-                                  height: 36,
-                                  fit: BoxFit.contain,
-                                ),
+                                child: _profileData != null && (_profileData!['avatar_url'] ?? '').isNotEmpty
+                                    ? Image.network(
+                                        _profileData!['avatar_url'],
+                                        width: 48,
+                                        height: 48,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const Icon(Icons.person, color: AppColors.primary),
+                                      )
+                                    : Image.asset(
+                                        'assets/images/logo_icon.png',
+                                        width: 36,
+                                        height: 36,
+                                        fit: BoxFit.contain,
+                                      ),
                               ),
                             ),
                           ),
@@ -248,10 +272,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Selamat Datang,',
+                                const Text('Selamat Datang,',
                                     style: TextStyle(color: Colors.white60, fontSize: 13)),
-                                Text('Brawidya Dharma',
-                                    style: TextStyle(
+                                Text(_profileData?['name'] ?? 'Pengguna',
+                                    style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold)),
@@ -317,8 +341,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                                             shape: BoxShape.circle,
                                           ),
                                         ),
-                                        const Text('RENDAH',
-                                            style: TextStyle(
+                                        Text((_profileData?['gerd_status'] ?? 'Belum Dites').toUpperCase(),
+                                            style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 18,
                                                 fontWeight: FontWeight.bold)),
