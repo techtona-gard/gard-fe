@@ -64,6 +64,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       final weight = num.parse(_weightCtrl.text);
 
       await SupabaseService.instance.saveProfile(
+        name: _userInfo['name'] ?? 'Pengguna',
         height: height,
         weight: weight,
         birthDate: "${_selectedBirthDate!.year}-${_selectedBirthDate!.month.toString().padLeft(2, '0')}-${_selectedBirthDate!.day.toString().padLeft(2, '0')}",

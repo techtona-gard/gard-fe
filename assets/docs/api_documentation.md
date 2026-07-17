@@ -1,0 +1,360 @@
+# Gard Backend API Documentation
+
+Base URL: `http://localhost:3000/api/v1`
+
+Semua respons sukses menggunakan format:
+```json
+{ "status": "success", "data": { ... } }
+```
+Semua respons error menggunakan format:
+```json
+{ "status": "fail" | "error", "message": "Pesan error" }
+```
+
+---
+
+## 👤 Users
+
+### GET /api/v1/users
+Mengambil semua data user.
+
+**Response 200:**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "user_id": "uuid",
+      "role_id": 1,
+      "height": 170,
+      "weight": 65.5,
+      "birth_date": "1995-10-25T00:00:00.000Z",
+      "emergency_wa": "08123456789",
+      "status_gerd": "ringan",
+      "created_at": "2026-07-17T00:00:00.000Z",
+      "roles": { "role_id": 1, "name": "user" }
+    }
+  ]
+}
+```
+
+---
+
+### GET /api/v1/users/:id
+Mengambil satu user berdasarkan UUID.
+
+**Path Params:**
+- `id` *(string UUID, wajib)* — UUID dari user
+
+**Response 200:**
+```json
+{
+  "status": "success",
+  "data": {
+    "user_id": "uuid",
+    "role_id": 1,
+    "height": 170,
+    "weight": 65.5,
+    "birth_date": "1995-10-25T00:00:00.000Z",
+    "emergency_wa": "08123456789",
+    "status_gerd": "ringan",
+    "created_at": "2026-07-17T00:00:00.000Z",
+    "roles": { "role_id": 1, "name": "user" }
+  }
+}
+```
+
+**Response 404:**
+```json
+{ "status": "fail", "message": "User tidak ditemukan" }
+```
+
+---
+
+### POST /api/v1/users
+Membuat user baru.
+
+**Request Body (JSON):**
+- `user_id` *(string UUID, wajib)* — UUID dari Supabase Auth
+- `role_id` *(integer, opsional)* — 1=user, 2=verifier, 3=doctor
+- `height` *(integer, opsional)* — Tinggi badan dalam cm
+- `weight` *(number, opsional)* — Berat badan dalam kg
+- `birth_date` *(string ISO date, opsional)* — Contoh: `"1995-10-25"`
+- `emergency_wa` *(string, opsional)* — Nomor WhatsApp darurat
+- `status_gerd` *(string, opsional)* — Status GERD
+
+**Contoh Request:**
+```json
+{
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "role_id": 1,
+  "height": 170,
+  "weight": 65.5,
+  "birth_date": "1995-10-25",
+  "emergency_wa": "08123456789",
+  "status_gerd": "ringan"
+}
+```
+
+**Response 201:**
+```json
+{ "status": "success", "data": { ... } }
+```
+
+**Response 400:**
+```json
+{ "status": "fail", "message": "user_id wajib diisi" }
+```
+
+**Response 409:**
+```json
+{ "status": "fail", "message": "user_id sudah digunakan" }
+```
+
+---
+
+### PATCH /api/v1/users/:id
+Memperbarui data user. Semua field bersifat opsional.
+
+**Path Params:**
+- `id` *(string UUID, wajib)* — UUID dari user
+
+**Request Body (JSON):**
+- `role_id` *(integer, opsional)*
+- `height` *(integer, opsional)*
+- `weight` *(number, opsional)*
+- `birth_date` *(string ISO date, opsional)*
+- `emergency_wa` *(string, opsional)*
+- `status_gerd` *(string, opsional)*
+
+**Response 200:**
+```json
+{ "status": "success", "data": { ... } }
+```
+
+**Response 404:**
+```json
+{ "status": "fail", "message": "User tidak ditemukan" }
+```
+
+---
+
+### DELETE /api/v1/users/:id
+Menghapus user berdasarkan UUID.
+
+**Path Params:**
+- `id` *(string UUID, wajib)* — UUID dari user
+
+**Response 200:**
+```json
+{ "status": "success", "message": "User berhasil dihapus" }
+```
+
+**Response 404:**
+```json
+{ "status": "fail", "message": "User tidak ditemukan" }
+```
+
+---
+
+## 📋 Riwayat (Histories)
+
+Mendukung 3 kategori riwayat:
+- `DETEKSI` — Hasil deteksi GERD, memiliki field khusus `severity_level`
+- `KONSULTASI` — Riwayat konsultasi dokter, memiliki field khusus `doctor_name` dan `doctor_title`
+- `KUESIONER` — Hasil kuesioner GERD-Q, memiliki field khusus `gerdq_score`
+
+---
+
+### POST /api/v1/histories
+Membuat riwayat baru.
+
+**Request Body (JSON):**
+- `user_id` *(string UUID, wajib)* — UUID dari user
+- `category` *(string, wajib)* — Salah satu dari: `DETEKSI`, `KONSULTASI`, `KUESIONER`
+- `history_date` *(string ISO date, opsional)* — Default: hari ini
+- `description` *(string, opsional)* — Deskripsi riwayat
+- `severity_level` *(string, opsional)* — **Hanya berlaku untuk kategori `DETEKSI`**
+- `doctor_name` *(string, opsional)* — **Hanya berlaku untuk kategori `KONSULTASI`**
+- `doctor_title` *(string, opsional)* — **Hanya berlaku untuk kategori `KONSULTASI`**
+- `gerdq_score` *(integer, opsional)* — **Hanya berlaku untuk kategori `KUESIONER`**
+
+**Contoh Request – Kategori DETEKSI:**
+```json
+{
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "category": "DETEKSI",
+  "history_date": "2026-07-17",
+  "description": "Deteksi GERD tahap awal",
+  "severity_level": "Ringan"
+}
+```
+
+**Contoh Request – Kategori KONSULTASI:**
+```json
+{
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "category": "KONSULTASI",
+  "history_date": "2026-07-17",
+  "description": "Konsultasi rutin",
+  "doctor_name": "Budi Santoso",
+  "doctor_title": "dr., Sp.PD"
+}
+```
+
+**Contoh Request – Kategori KUESIONER:**
+```json
+{
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "category": "KUESIONER",
+  "history_date": "2026-07-17",
+  "gerdq_score": 8
+}
+```
+
+**Response 201:**
+```json
+{
+  "status": "success",
+  "data": {
+    "history_id": 1,
+    "user_id": "uuid",
+    "category": "DETEKSI",
+    "history_date": "2026-07-17T00:00:00.000Z",
+    "description": "Deteksi GERD tahap awal",
+    "severity_level": "Ringan",
+    "doctor_name": null,
+    "doctor_title": null,
+    "gerdq_score": null,
+    "created_at": "2026-07-17T03:52:00.000Z"
+  }
+}
+```
+
+**Response 400:**
+```json
+{ "status": "fail", "message": "Kategori riwayat tidak valid. Harus salah satu dari: DETEKSI, KONSULTASI, KUESIONER" }
+```
+
+---
+
+### GET /api/v1/histories/user/:userId
+Mengambil semua riwayat milik user, diurutkan dari yang terbaru.
+
+**Path Params:**
+- `userId` *(string UUID, wajib)* — UUID dari user
+
+**Response 200:**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "history_id": 1,
+      "user_id": "uuid",
+      "category": "KUESIONER",
+      "history_date": "2026-07-17T00:00:00.000Z",
+      "description": null,
+      "severity_level": null,
+      "doctor_name": null,
+      "doctor_title": null,
+      "gerdq_score": 8,
+      "created_at": "2026-07-17T03:52:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### DELETE /api/v1/histories/:id
+Menghapus riwayat berdasarkan ID.
+
+**Path Params:**
+- `id` *(integer, wajib)* — Primary key dari riwayat
+
+**Response 200:**
+```json
+{ "status": "success", "message": "Riwayat berhasil dihapus" }
+```
+
+**Response 404:**
+```json
+{ "status": "fail", "message": "Riwayat tidak ditemukan" }
+```
+
+---
+
+## 🤖 AI Medical Guidelines
+
+### GET /api/v1/ai/medical-guidelines
+Melakukan pencarian panduan medis menggunakan semantic search berbasis Gemini AI.
+
+**Query Params:**
+- `query` *(string, wajib)* — Teks yang ingin dicari
+- `limit` *(integer, opsional)* — Jumlah hasil maksimal. Default: `2`
+
+**Contoh Request:**
+```
+GET /api/v1/ai/medical-guidelines?query=cara mengatasi GERD&limit=3
+```
+
+**Response 200:**
+```json
+{
+  "status": "success",
+  "data": [
+    "Panduan penanganan GERD ringan: hindari makanan berlemak...",
+    "Tatalaksana GERD tahap lanjut memerlukan konsultasi dokter..."
+  ]
+}
+```
+
+**Response 400:**
+```json
+{ "status": "fail", "message": "Query parameter wajib diisi" }
+```
+
+---
+
+### POST /api/v1/ai/medical-guidelines/bulk
+Menyimpan atau memperbarui (upsert) batch data panduan medis beserta embedding vector-nya ke database.
+
+> [!NOTE]
+> Endpoint ini digunakan untuk proses ingesti data oleh admin, bukan untuk penggunaan normal dari aplikasi klien.
+
+**Request Body (JSON):**
+- `records` *(array, wajib)* — Array berisi data panduan
+
+Setiap item dalam `records`:
+- `id` *(string, wajib)* — ID unik panduan
+- `content` *(string, wajib)* — Isi teks panduan medis
+- `metadata` *(object, opsional)* — Metadata tambahan dalam format JSON
+- `embedding` *(number[], wajib)* — Array vektor dengan tepat **768 dimensi (angka)**
+
+**Contoh Request:**
+```json
+{
+  "records": [
+    {
+      "id": "guideline-001",
+      "content": "Teks isi panduan medis yang lengkap...",
+      "metadata": { "source": "Kemenkes 2024", "category": "GERD" },
+      "embedding": [0.0123, -0.0456, 0.0789, "...total 768 angka..."]
+    }
+  ]
+}
+```
+
+**Response 200:**
+```json
+{
+  "status": "success",
+  "message": "5 records medical guidelines berhasil disimpan/di-upsert"
+}
+```
+
+**Response 400:**
+```json
+{ "status": "fail", "message": "Records wajib dikirimkan dalam bentuk array" }
+```

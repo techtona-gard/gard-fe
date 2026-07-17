@@ -1,7 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:gard/constants/app_colors.dart';
 import 'package:gard/main.dart';
+import 'package:gard/models/history_model.dart';
+import 'package:gard/services/history_service.dart';
 import 'package:gard/services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GerdQ berdasarkan paper resmi:
+//   Jones R, et al. "Development of the GerdQ, a tool for the diagnosis and
+//   management of gastro-oesophageal reflux disease in primary care."
+//   Alimentary Pharmacology & Therapeutics 30(10), 2009.
+//
+// Scoring:
+//   Q1 Heartburn       → POSITIF  (0, 1, 2, 3)
+//   Q2 Regurgitasi     → POSITIF  (0, 1, 2, 3)
+//   Q3 Nyeri Epigastrik→ POSITIF  (0, 1, 2, 3)
+//   Q4 Mual            → POSITIF  (0, 1, 2, 3)
+//   Q5 Gangg. Tidur    → NEGATIF  (3, 2, 1, 0) — terbalik
+//   Q6 Obat Tambahan   → NEGATIF  (3, 2, 1, 0) — terbalik
+//   Total maks: 18
+//   Cut-off ≥ 8 → Kemungkinan GERD Tinggi
+// ─────────────────────────────────────────────────────────────────────────────
 
 class GerdQPage extends StatefulWidget {
   const GerdQPage({super.key});
@@ -14,56 +34,77 @@ class _GerdQPageState extends State<GerdQPage> {
   int _currentStep = 0;
   final List<int?> _answers = List.filled(6, null);
 
+  /// type: 'positive' → skor = indeks jawaban (0,1,2,3)
+  /// type: 'negative' → skor = 3 − indeks jawaban (3,2,1,0)
   final List<Map<String, dynamic>> _questions = [
     {
-      'question': 'Seberapa sering Anda merasa nyeri dada terbakar (heartburn)?',
+      'question':
+          'Seberapa sering Anda merasakan sensasi terbakar di belakang tulang dada (heartburn) dalam 7 hari terakhir?',
       'type': 'positive',
       'icon': Icons.local_fire_department_rounded,
+      'highlight': 'chest',
+      'hint': 'Rasa panas/perih yang menjalar dari dada ke leher.',
     },
     {
-      'question': 'Seberapa sering Anda merasa ada isi lambung yang naik ke arah tenggorokan (regurgitasi)?',
+      'question':
+          'Seberapa sering Anda merasa ada cairan atau makanan naik dari lambung ke mulut/tenggorokan (regurgitasi) dalam 7 hari terakhir?',
       'type': 'positive',
       'icon': Icons.keyboard_double_arrow_up_rounded,
+      'highlight': 'throat',
+      'hint': 'Sensasi isi lambung naik ke atas tanpa disengaja.',
     },
     {
-      'question': 'Seberapa sering Anda merasa nyeri di ulu hati?',
-      'type': 'negative',
+      'question':
+          'Seberapa sering Anda merasa nyeri di bagian tengah perut atas (ulu hati/epigastrik) dalam 7 hari terakhir?',
+      'type': 'positive',
       'icon': Icons.fmd_bad_rounded,
+      'highlight': 'upper_abdomen',
+      'hint': 'Nyeri atau rasa tidak nyaman di bagian tengah perut atas.',
     },
     {
-      'question': 'Seberapa sering Anda merasa mual?',
-      'type': 'negative',
+      'question':
+          'Seberapa sering Anda merasa mual dalam 7 hari terakhir?',
+      'type': 'positive',
       'icon': Icons.sick_rounded,
+      'highlight': 'stomach',
+      'hint': 'Rasa ingin muntah atau perut tidak enak.',
     },
     {
-      'question': 'Seberapa sering Anda mengalami gangguan tidur akibat rasa terbakar atau lambung naik?',
-      'type': 'positive',
+      'question':
+          'Seberapa sering Anda mengalami gangguan tidur akibat heartburn atau regurgitasi dalam 7 hari terakhir?',
+      'type': 'negative',
       'icon': Icons.bedtime_rounded,
+      'highlight': 'head',
+      'hint': 'Terbangun di malam hari atau sulit tidur karena gejala GERD.',
     },
     {
-      'question': 'Seberapa sering Anda mengonsumsi obat tambahan (seperti Antasida) untuk gejala tersebut?',
-      'type': 'positive',
+      'question':
+          'Seberapa sering Anda mengonsumsi obat tambahan (seperti antasida/obat warung) di luar resep dokter untuk meredakan gejala dalam 7 hari terakhir?',
+      'type': 'negative',
       'icon': Icons.medication_rounded,
+      'highlight': 'mouth',
+      'hint': 'Obat pengurang asam yang dibeli sendiri, bukan dari resep dokter.',
     },
   ];
 
-  final List<String> _options = [
+  final List<String> _optionLabels = [
     '0 Hari (Tidak Pernah)',
     '1 Hari',
-    '2-3 Hari',
-    '4-7 Hari',
+    '2–3 Hari',
+    '4–7 Hari',
   ];
 
-  void _handleAnswer(int optionIndex) {
-    setState(() {
-      _answers[_currentStep] = optionIndex;
-    });
+  /// Poin untuk soal positif: indeks = skor
+  final List<int> _positivePoints = [0, 1, 2, 3];
 
+  /// Poin untuk soal negatif: terbalik
+  final List<int> _negativePoints = [3, 2, 1, 0];
+
+  void _handleAnswer(int optionIndex) {
+    setState(() => _answers[_currentStep] = optionIndex);
     Future.delayed(const Duration(milliseconds: 300), () {
       if (_currentStep < _questions.length - 1) {
-        setState(() {
-          _currentStep++;
-        });
+        setState(() => _currentStep++);
       } else {
         _showResult();
       }
@@ -73,40 +114,52 @@ class _GerdQPageState extends State<GerdQPage> {
   Future<void> _showResult() async {
     int totalScore = 0;
     for (int i = 0; i < _questions.length; i++) {
-      int score = 0;
-      int answerIndex = _answers[i]!;
-      if (_questions[i]['type'] == 'positive') {
-        score = answerIndex;
-      } else {
-        score = 3 - answerIndex;
-      }
-      totalScore += score;
+      final ans = _answers[i]!;
+      totalScore += _questions[i]['type'] == 'positive'
+          ? _positivePoints[ans]
+          : _negativePoints[ans];
     }
 
-    bool isHighRisk = totalScore >= 8;
-    String statusGerd = isHighRisk ? 'Tinggi' : 'Rendah';
+    final String riskLabel = totalScore >= 8 ? 'Tinggi' : 'Rendah';
 
-    // Show loading
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
+      builder: (_) => const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       ),
     );
 
     try {
-      await SupabaseService.instance.saveGerdStatus(statusGerd);
+      await SupabaseService.instance.saveGerdStatus(riskLabel);
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId != null) {
+        await HistoryService.instance.insertHistory(HistoryModel(
+          historyId: 0,
+          userId: userId,
+          category: 'KUESIONER',
+          historyDate: DateTime.now(),
+          description: 'Skor GerdQ: $totalScore / 18',
+          gerdqScore: totalScore,
+          severityLevel: riskLabel,
+        ));
+      }
     } catch (e) {
-      debugPrint("Error saving gerd status: $e");
+      debugPrint('Error saving GerdQ result: $e');
     }
 
     if (mounted) {
-      Navigator.pop(context); // Close loading dialog
+      Navigator.pop(context);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => GerdQResultPage(score: totalScore),
+          builder: (_) => GerdQResultPage(
+            score: totalScore,
+            answers: List<int>.from(_answers.map((a) => a ?? 0)),
+            questions: _questions,
+            positivePoints: _positivePoints,
+            negativePoints: _negativePoints,
+          ),
         ),
       );
     }
@@ -116,6 +169,7 @@ class _GerdQPageState extends State<GerdQPage> {
   Widget build(BuildContext context) {
     const emeraldGreen = AppColors.doctorPrimary;
     const offWhite = Color(0xFFF8F9FA);
+    final currentQ = _questions[_currentStep];
 
     return Scaffold(
       backgroundColor: offWhite,
@@ -124,15 +178,17 @@ class _GerdQPageState extends State<GerdQPage> {
         elevation: 0,
         centerTitle: true,
         title: const Text(
-          'GerdQ Kuesioner',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+          'Kuesioner GerdQ',
+          style: TextStyle(
+              color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: Colors.black, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(2.0),
+          preferredSize: const Size.fromHeight(3.0),
           child: LinearProgressIndicator(
             value: (_currentStep + 1) / _questions.length,
             backgroundColor: Colors.grey.shade100,
@@ -147,20 +203,21 @@ class _GerdQPageState extends State<GerdQPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 30),
+              const SizedBox(height: 24),
               SizedBox(
                 height: 140,
                 width: 100,
                 child: CustomPaint(
                   painter: TorsoPainter(
-                    highlightArea: _getHighlightArea(_currentStep),
+                    highlightArea: currentQ['highlight'],
                     highlightColor: emeraldGreen,
                   ),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
                   color: emeraldGreen.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -175,42 +232,55 @@ class _GerdQPageState extends State<GerdQPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Text(
-                _questions[_currentStep]['question'],
+                currentQ['question'],
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 24,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF1A1C1E),
-                  height: 1.2,
+                  height: 1.3,
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 8),
+              Text(
+                currentQ['hint'],
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 13, color: Colors.grey.shade600, height: 1.4),
+              ),
+              const SizedBox(height: 28),
               Expanded(
                 child: ListView.separated(
                   physics: const BouncingScrollPhysics(),
-                  itemCount: _options.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 14),
+                  itemCount: _optionLabels.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    bool isSelected = _answers[_currentStep] == index;
+                    final bool isSelected = _answers[_currentStep] == index;
+                    final int pts = currentQ['type'] == 'positive'
+                        ? _positivePoints[index]
+                        : _negativePoints[index];
                     return GestureDetector(
                       onTap: () => _handleAnswer(index),
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                        duration: const Duration(milliseconds: 220),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 20),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected ? emeraldGreen : Colors.grey.shade200,
+                            color: isSelected
+                                ? emeraldGreen
+                                : Colors.grey.shade200,
                             width: isSelected ? 2.5 : 1,
                           ),
                           boxShadow: [
                             if (isSelected)
                               BoxShadow(
-                                color: emeraldGreen.withOpacity(0.1),
-                                blurRadius: 10,
+                                color: emeraldGreen.withOpacity(0.12),
+                                blurRadius: 12,
                                 offset: const Offset(0, 4),
                               )
                             else
@@ -224,25 +294,51 @@ class _GerdQPageState extends State<GerdQPage> {
                         child: Row(
                           children: [
                             Container(
-                              width: 24,
-                              height: 24,
+                              width: 22,
+                              height: 22,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isSelected ? emeraldGreen : Colors.grey.shade400,
-                                  width: isSelected ? 7 : 2,
+                                  color: isSelected
+                                      ? emeraldGreen
+                                      : Colors.grey.shade400,
+                                  width: isSelected ? 6 : 2,
                                 ),
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 14),
                             Expanded(
                               child: Text(
-                                _options[index],
+                                _optionLabels[index],
                                 style: TextStyle(
                                   fontSize: 16,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                  color: isSelected ? emeraldGreen : Colors.black87,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? emeraldGreen
+                                      : Colors.black87,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? emeraldGreen
+                                    : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '+$pts poin',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.grey.shade600,
                                 ),
                               ),
                             ),
@@ -260,60 +356,44 @@ class _GerdQPageState extends State<GerdQPage> {
       ),
     );
   }
-
-  String _getHighlightArea(int step) {
-    switch (step) {
-      case 0: return 'chest';
-      case 1: return 'throat';
-      case 2: return 'upper_abdomen';
-      case 3: return 'stomach';
-      case 4: return 'head';
-      case 5: return 'mouth';
-      default: return 'none';
-    }
-  }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TorsoPainter
+// ─────────────────────────────────────────────────────────────────────────────
 
 class TorsoPainter extends CustomPainter {
   final String highlightArea;
   final Color highlightColor;
-
   TorsoPainter({required this.highlightArea, required this.highlightColor});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    final linePaint = Paint()
       ..color = Colors.grey.shade300
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
-
-    final highlightPaint = Paint()
+    final fillPaint = Paint()
       ..color = highlightColor.withOpacity(0.6)
       ..style = PaintingStyle.fill;
-
-    final highlightGlow = Paint()
+    final glowPaint = Paint()
       ..color = highlightColor.withOpacity(0.2)
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
 
-    final path = Path();
-    path.moveTo(size.width * 0.5, size.height * 0.1); 
-    path.addOval(Rect.fromLTWH(size.width * 0.35, 0, size.width * 0.3, size.height * 0.2)); 
-    
-    path.moveTo(size.width * 0.45, size.height * 0.2);
-    path.lineTo(size.width * 0.55, size.height * 0.2);
-    
-    path.moveTo(size.width * 0.2, size.height * 0.3);
-    path.quadraticBezierTo(size.width * 0.5, size.height * 0.25, size.width * 0.8, size.height * 0.3);
-    path.lineTo(size.width * 0.75, size.height * 0.8);
-    path.lineTo(size.width * 0.25, size.height * 0.8);
-    path.close();
-
-    canvas.drawPath(path, paint);
+    final bodyPath = Path()
+      ..addOval(Rect.fromLTWH(
+          size.width * 0.35, 0, size.width * 0.3, size.height * 0.2))
+      ..moveTo(size.width * 0.2, size.height * 0.3)
+      ..quadraticBezierTo(size.width * 0.5, size.height * 0.25,
+          size.width * 0.8, size.height * 0.3)
+      ..lineTo(size.width * 0.75, size.height * 0.8)
+      ..lineTo(size.width * 0.25, size.height * 0.8)
+      ..close();
+    canvas.drawPath(bodyPath, linePaint);
 
     Offset center = Offset.zero;
     double radius = 15;
-
     switch (highlightArea) {
       case 'chest':
         center = Offset(size.width * 0.5, size.height * 0.4);
@@ -336,49 +416,94 @@ class TorsoPainter extends CustomPainter {
         radius = 5;
         break;
     }
-
     if (center != Offset.zero) {
-      canvas.drawCircle(center, radius + 10, highlightGlow);
-      canvas.drawCircle(center, radius, highlightPaint);
+      canvas.drawCircle(center, radius + 10, glowPaint);
+      canvas.drawCircle(center, radius, fillPaint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant TorsoPainter oldDelegate) => 
-      oldDelegate.highlightArea != highlightArea;
+  bool shouldRepaint(covariant TorsoPainter old) =>
+      old.highlightArea != highlightArea;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GerdQ Result Page
+// ─────────────────────────────────────────────────────────────────────────────
 
 class GerdQResultPage extends StatelessWidget {
   final int score;
-  const GerdQResultPage({super.key, required this.score});
+  final List<int> answers;
+  final List<Map<String, dynamic>> questions;
+  final List<int> positivePoints;
+  final List<int> negativePoints;
+
+  const GerdQResultPage({
+    super.key,
+    required this.score,
+    required this.answers,
+    required this.questions,
+    required this.positivePoints,
+    required this.negativePoints,
+  });
 
   @override
   Widget build(BuildContext context) {
     const emeraldGreen = AppColors.doctorPrimary;
     const offWhite = Color(0xFFF8F9FA);
-    bool isHighRisk = score >= 8;
+
+    final bool isHighRisk = score >= 8;
+    final Color riskColor = isHighRisk ? Colors.red.shade600 : emeraldGreen;
+    final Color riskBg =
+        isHighRisk ? Colors.red.shade50 : emeraldGreen.withOpacity(0.08);
+    final String riskLabel = isHighRisk ? 'TINGGI' : 'RENDAH';
+
+    final String clinicalNote;
+    if (score <= 2) {
+      clinicalNote =
+          'Kemungkinan GERD sangat kecil. Gejala yang Anda alami kemungkinan bukan disebabkan oleh GERD.';
+    } else if (score <= 7) {
+      clinicalNote =
+          'Kemungkinan GERD rendah. Perhatikan gejala Anda dan konsultasikan jika gejala memburuk atau berlanjut.';
+    } else if (score <= 10) {
+      clinicalNote =
+          'Kemungkinan besar Anda menderita GERD. Disarankan segera berkonsultasi dengan dokter untuk konfirmasi diagnosis dan penanganan.';
+    } else if (score <= 14) {
+      clinicalNote =
+          'Gejala GERD Anda cukup berat dan berdampak pada kualitas hidup. Segera temui dokter spesialis gastroenterologi.';
+    } else {
+      clinicalNote =
+          'Gejala sangat berat. Penanganan medis segera sangat dianjurkan untuk mencegah komplikasi seperti esofagitis atau Barrett\'s esophagus.';
+    }
+
+    final List<String> labels = ['0 Hari', '1 Hari', '2–3 Hari', '4–7 Hari'];
 
     return Scaffold(
       backgroundColor: offWhite,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        centerTitle: true,
+        title: const Text(
+          'Hasil GerdQ',
+          style: TextStyle(
+              color: Color(0xFF1A1C1E),
+              fontWeight: FontWeight.bold,
+              fontSize: 18),
+        ),
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
+        child: SingleChildScrollView(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Hasil Analisis GerdQ',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2D3142),
-                ),
-              ),
-              const SizedBox(height: 32),
-              
+              // ── Skor utama
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(32),
+                padding: const EdgeInsets.symmetric(
+                    vertical: 32, horizontal: 24),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
@@ -392,94 +517,194 @@ class GerdQResultPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    const Text(
-                      'Total Skor Anda',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
+                    const Text('Total Skor GerdQ Anda',
+                        style: TextStyle(fontSize: 15, color: Colors.grey)),
                     const SizedBox(height: 8),
-                    Text(
-                      '$score',
-                      style: const TextStyle(
-                        fontSize: 64,
-                        fontWeight: FontWeight.bold,
-                        color: emeraldGreen,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                      decoration: BoxDecoration(
-                        color: isHighRisk ? Colors.red.shade50 : emeraldGreen.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(
-                          color: isHighRisk ? Colors.red : emeraldGreen,
-                          width: 1.5,
+                    RichText(
+                      text: TextSpan(children: [
+                        TextSpan(
+                          text: '$score',
+                          style: TextStyle(
+                            fontSize: 72,
+                            fontWeight: FontWeight.bold,
+                            color: riskColor,
+                          ),
                         ),
+                        const TextSpan(
+                          text: ' / 18',
+                          style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.grey),
+                        ),
+                      ]),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: riskBg,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: riskColor, width: 1.5),
                       ),
                       child: Text(
-                        isHighRisk ? 'STATUS RESIKO GERD: TINGGI' : 'STATUS RESIKO GERD: RENDAH',
-                        textAlign: TextAlign.center,
+                        'RISIKO GERD: $riskLabel',
                         style: TextStyle(
-                          color: isHighRisk ? Colors.red : emeraldGreen,
+                          color: riskColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
+                          letterSpacing: 0.8,
                         ),
                       ),
                     ),
-                    
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 16),
                     Text(
-                      isHighRisk 
-                        ? 'Skor Anda menunjukkan kemungkinan tinggi menderita GERD. Disarankan untuk segera berkonsultasi dengan tenaga medis.'
-                        : 'Skor Anda menunjukkan kemungkinan rendah menderita GERD. Tetap jaga pola makan dan gaya hidup sehat.',
+                      clinicalNote,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.grey.shade700,
-                        height: 1.5,
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                          height: 1.6),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border:
+                            Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: const Text(
+                        '📌 Berdasarkan paper GerdQ (Jones et al., 2009):\nSkor ≥ 8 = kemungkinan GERD tinggi\n(Sensitivitas 65%, Spesifisitas 71%)',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            color: Colors.grey,
+                            height: 1.6),
                       ),
                     ),
                   ],
                 ),
               ),
-              
-              const Spacer(),
-              
+              const SizedBox(height: 20),
+
+              // ── Breakdown per pertanyaan
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Rincian Jawaban',
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1C1E)),
+                    ),
+                    const SizedBox(height: 14),
+                    ...List.generate(questions.length, (i) {
+                      final q = questions[i];
+                      final ans = answers[i];
+                      final pts = q['type'] == 'positive'
+                          ? positivePoints[ans]
+                          : negativePoints[ans];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(q['icon'] as IconData,
+                                size: 18, color: emeraldGreen),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Q${i + 1}: ${labels[ans]}',
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            Text(
+                              '+$pts',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: pts >= 2
+                                    ? Colors.red.shade400
+                                    : emeraldGreen,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ── CTA Buttons
               SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
+                height: 52,
+                child: ElevatedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Mengunduh hasil laporan...')),
+                      const SnackBar(
+                          content:
+                              Text('Fitur unduh laporan segera hadir.')),
                     );
                   },
+                  icon: const Icon(Icons.download_rounded, size: 20),
+                  label: const Text(
+                    'Unduh Hasil untuk Dokter',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: emeraldGreen,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text('Unduh Hasil untuk Dokter', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: OutlinedButton(
+                height: 52,
+                child: OutlinedButton.icon(
                   onPressed: () => Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const MainNavigation()),
+                    MaterialPageRoute(
+                        builder: (_) => const MainNavigation()),
+                  ),
+                  icon: const Icon(Icons.home_rounded, size: 20),
+                  label: const Text(
+                    'Masuk ke Beranda',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: emeraldGreen, width: 2),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                     foregroundColor: emeraldGreen,
                   ),
-                  child: const Text('Masuk ke Beranda', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
+              const SizedBox(height: 32),
             ],
           ),
         ),

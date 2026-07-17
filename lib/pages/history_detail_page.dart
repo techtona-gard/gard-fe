@@ -1,40 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:gard/constants/app_colors.dart';
-
-/// Model data untuk item riwayat
-class HistoryItem {
-  final String title;
-  final String date;
-  final String description;
-  final String category;
-  final IconData icon;
-  final Color color;
-  final String? doctor;
-  final String? result;
-  final String? notes;
-  final List<String> symptoms;
-
-  const HistoryItem({
-    required this.title,
-    required this.date,
-    required this.description,
-    required this.category,
-    required this.icon,
-    required this.color,
-    this.doctor,
-    this.result,
-    this.notes,
-    this.symptoms = const [],
-  });
-}
+import 'package:gard/models/history_model.dart';
+import 'package:intl/intl.dart';
 
 class HistoryDetailPage extends StatelessWidget {
-  final HistoryItem item;
+  final HistoryModel item;
 
   const HistoryDetailPage({super.key, required this.item});
 
+  // Helper untuk menentukan icon & warna
+  IconData _getCategoryIcon() {
+    switch (item.category) {
+      case 'DETEKSI':
+        return Icons.warning_amber_rounded;
+      case 'KONSULTASI':
+        return Icons.medical_services_outlined;
+      case 'KUESIONER':
+        return Icons.assignment_outlined;
+      case 'SOS':
+        return Icons.sos_rounded;
+      default:
+        return Icons.history_rounded;
+    }
+  }
+
+  String _getTitle() {
+    switch (item.category) {
+      case 'DETEKSI':
+        return 'Deteksi Kondisi GERD';
+      case 'KONSULTASI':
+        return 'Konsultasi Medis';
+      case 'KUESIONER':
+        return 'Hasil Pemeriksaan GerdQ';
+      case 'SOS':
+        return 'Riwayat Panggilan SOS Darurat';
+      default:
+        return 'Detail Riwayat';
+    }
+  }
+
+  String _getFormattedDate() {
+    return DateFormat('dd MMMM yyyy, HH:mm').format(item.historyDate);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final icon = _getCategoryIcon();
+    final title = _getTitle();
+    
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
@@ -42,17 +55,10 @@ class HistoryDetailPage extends StatelessWidget {
           // ── Header ─────────────────────────────────────────────────────
           Container(
             padding: EdgeInsets.fromLTRB(
-                16, MediaQuery.of(context).padding.top + 16, 24, 32),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [item.color, item.color.withOpacity(0.7)],
-              ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(36),
-                bottomRight: Radius.circular(36),
-              ),
+                16, MediaQuery.of(context).padding.top + 16, 24, 24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: AppColors.softAccent, width: 1)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,20 +68,19 @@ class HistoryDetailPage extends StatelessWidget {
                     IconButton(
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white, size: 20),
+                          color: AppColors.darkAccent, size: 20),
                     ),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
                       ),
                       child: Text(
                         item.category,
                         style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.primary,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5),
@@ -89,31 +94,37 @@ class HistoryDetailPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(item.icon, color: Colors.white, size: 28),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(icon, color: AppColors.primary, size: 24),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: const TextStyle(
+                                  color: AppColors.darkAccent,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.2),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 14),
-                      Text(
-                        item.title,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.2),
-                      ),
-                      const SizedBox(height: 6),
                       Row(
                         children: [
                           const Icon(Icons.calendar_today_rounded,
-                              color: Colors.white70, size: 13),
+                              color: AppColors.textSecondary, size: 14),
                           const SizedBox(width: 6),
-                          Text(item.date,
-                              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                          Text(_getFormattedDate(),
+                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                         ],
                       ),
                     ],
@@ -131,53 +142,26 @@ class HistoryDetailPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Status Badge
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: item.color.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: item.color.withOpacity(0.15)),
+                  if (item.description != null && item.description!.isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.softAccent),
+                      ),
+                      child: Text(
+                        item.description!,
+                        style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textPrimary, height: 1.5),
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: item.color.withOpacity(0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(item.icon, color: item.color, size: 24),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.description,
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    color: item.color),
-                              ),
-                              if (item.result != null) ...[
-                                const SizedBox(height: 4),
-                                Text(item.result!,
-                                    style: const TextStyle(
-                                        color: AppColors.textSecondary, fontSize: 12)),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
 
                   // ── Dokter (jika ada) ─────────────────────────────────
-                  if (item.doctor != null) ...[
+                  if (item.doctorName != null) ...[
                     _buildDetailCard(
                       title: 'Dokter yang Menangani',
                       icon: Icons.person_pin_rounded,
@@ -199,14 +183,15 @@ class HistoryDetailPage extends StatelessWidget {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(item.doctor!,
+                                  Text(item.doctorName!,
                                       style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 15,
                                           color: AppColors.darkAccent)),
-                                  const Text('Spesialis Penyakit Dalam',
-                                      style: TextStyle(
-                                          color: AppColors.textSecondary, fontSize: 12)),
+                                  if (item.doctorTitle != null)
+                                    Text(item.doctorTitle!,
+                                        style: const TextStyle(
+                                            color: AppColors.textSecondary, fontSize: 12)),
                                 ],
                               ),
                             ],
@@ -217,53 +202,37 @@ class HistoryDetailPage extends StatelessWidget {
                     const SizedBox(height: 16),
                   ],
 
-                  // ── Gejala (jika ada) ─────────────────────────────────
-                  if (item.symptoms.isNotEmpty) ...[
+                  if (item.gerdqScore != null) ...[
                     _buildDetailCard(
-                      title: 'Gejala yang Terdeteksi',
-                      icon: Icons.list_alt_rounded,
-                      content: Column(
-                        children: item.symptoms
-                            .map((symptom) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: BoxDecoration(
-                                          color: item.color,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          symptom,
-                                          style: const TextStyle(
-                                              color: AppColors.textPrimary,
-                                              fontSize: 14,
-                                              height: 1.4),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ))
-                            .toList(),
+                      title: 'Skor GerdQ',
+                      icon: Icons.assignment_rounded,
+                      content: Row(
+                        children: [
+                          Text('${item.gerdqScore} / 18',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  color: AppColors.primary)),
+                          const SizedBox(width: 10),
+                          Text(item.gerdqScore! >= 8 ? 'Resiko Tinggi GERD' : 'Resiko Rendah',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: item.gerdqScore! >= 8 ? Colors.red : Colors.green)),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 16),
                   ],
-
-                  // ── Catatan ───────────────────────────────────────────
-                  if (item.notes != null) ...[
+                  
+                  if (item.severityLevel != null) ...[
                     _buildDetailCard(
-                      title: 'Catatan & Rekomendasi',
-                      icon: Icons.note_alt_outlined,
+                      title: 'Tingkat Keparahan',
+                      icon: Icons.monitor_heart_rounded,
                       content: Text(
-                        item.notes!,
+                        item.severityLevel!,
                         style: const TextStyle(
-                            color: AppColors.textPrimary, fontSize: 14, height: 1.6),
+                            color: AppColors.darkAccent, fontSize: 15, fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -271,14 +240,12 @@ class HistoryDetailPage extends StatelessWidget {
 
                   // ── Timeline ──────────────────────────────────────────
                   _buildDetailCard(
-                    title: 'Timeline Kejadian',
+                    title: 'Waktu Perekaman',
                     icon: Icons.timeline_rounded,
                     content: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTimelineItem('08:00', 'Gejala mulai terdeteksi', true),
-                        _buildTimelineItem('08:15', 'Data dicatat sistem GARD', true),
-                        _buildTimelineItem('08:30', 'Notifikasi terkirim ke dokter', true),
-                        _buildTimelineItem('09:00', 'Tindak lanjut dijadwalkan', false),
+                        _buildTimelineItem(_getFormattedDate(), 'Data direkam ke dalam sistem GARD', true),
                       ],
                     ),
                   ),

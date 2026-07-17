@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gard/constants/app_colors.dart';
 import 'package:gard/services/health_connect_service.dart';
+import 'package:gard/services/health_sync_service.dart';
 
 class HealthPage extends StatefulWidget {
   const HealthPage({super.key});
@@ -39,6 +40,19 @@ class _HealthPageState extends State<HealthPage> {
           _healthSummary = summary;
           _isLoading = false;
         });
+      }
+      
+      // Sync ke backend (Supabase)
+      if (summary != null) {
+        final int steps = summary['steps'] ?? 0;
+        final double heartRate = summary['heartRate'] ?? 0.0;
+        final int sleepMins = summary['sleepMinutes'] ?? 0;
+        
+        await HealthSyncService.instance.syncLifestyleData(
+          steps: steps > 0 ? steps : null,
+          heartRate: heartRate > 0 ? heartRate.toInt() : null,
+          sleepHours: sleepMins > 0 ? (sleepMins / 60) : null,
+        );
       }
     } else {
       if (mounted) {

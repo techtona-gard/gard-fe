@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -61,13 +63,20 @@ class _CameraPageState extends State<CameraPage>
       await _initializeControllerFuture;
       setState(() => _isCapturing = true);
       final image = await _controller.takePicture();
+
+      // Konversi file ke base64 untuk dikirim ke backend API
+      final bytes = await File(image.path).readAsBytes();
+      final base64Image = base64Encode(bytes);
+
       setState(() => _isCapturing = false);
       if (mounted) {
-        // Navigate to Chatbot with the captured image
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ChatbotPage(capturedImagePath: image.path),
+            builder: (context) => ChatbotPage(
+              capturedImagePath: image.path,
+              capturedImageBase64: base64Image,
+            ),
           ),
         );
       }
@@ -103,9 +112,34 @@ class _CameraPageState extends State<CameraPage>
 
           return Stack(
             children: [
-              // ── Full-screen camera preview ──────────────────────────────
+              // ── Full-screen camera preview (Scaled to prevent squishing) ──────
               Positioned.fill(
-                child: CameraPreview(_controller),
+                child: Builder(
+                  builder: (context) {
+                    final size = MediaQuery.of(context).size;
+                    final deviceRatio = size.width / size.height;
+                    
+                    // Fallback to 1.0 if not initialized or previewSize is null
+                    double scale = 1.0;
+                    if (_controller.value.isInitialized && _controller.value.previewSize != null) {
+                      final previewSize = _controller.value.previewSize!;
+                      // Swap width/height for portrait
+                      final cameraRatio = previewSize.height / previewSize.width;
+                      
+                      scale = deviceRatio / cameraRatio;
+                      if (scale < 1.0) {
+                        scale = 1.0 / scale;
+                      }
+                    }
+                    
+                    return Transform.scale(
+                      scale: scale,
+                      child: Center(
+                        child: CameraPreview(_controller),
+                      ),
+                    );
+                  },
+                ),
               ),
 
               // ── Dark overlay except scan frame ──────────────────────────

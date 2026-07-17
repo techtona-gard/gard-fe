@@ -11,6 +11,10 @@ import 'package:gard/services/sos_service.dart';
 import 'package:gard/constants/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
+import 'dart:async';
+import 'package:gard/services/health_connect_service.dart';
+import 'package:gard/services/health_sync_service.dart';
+import 'package:gard/services/auto_schedule_service.dart';
 
 List<CameraDescription> cameras = [];
 
@@ -41,6 +45,9 @@ Future<void> main() async {
     debugPrint("Camera error: $e");
   }
 
+  // Start periodic 10-minute sync & AI schedule generation timer
+  _startHealthSyncTimer();
+
   runApp(const MyApp());
 }
 
@@ -53,6 +60,38 @@ void _setupDeepLinks() {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
     } catch (e) {
       debugPrint("Error processing deep link: $e");
+    }
+  });
+}
+
+void _startHealthSyncTimer() {
+  Timer.periodic(const Duration(minutes: 10), (timer) async {
+    try {
+      // 1. Pengecekan otomatis rekomendasi jadwal makan AI besok pukul 23:59
+      await AutoScheduleService.instance.checkAndGenerateTomorrowSchedule();
+
+      // 2. Sinkronisasi data Health Connect
+      final supabase = Supabase.instance.client;
+      if (supabase.auth.currentUser != null) {
+        final healthService = HealthService();
+        await healthService.init();
+        final hasPerm = await healthService.hasPermissions();
+        if (hasPerm) {
+          final summary = await healthService.getTodaySummary();
+          final int steps = summary['steps'] ?? 0;
+          final double heartRate = summary['heartRate'] ?? 0.0;
+          final int sleepMins = summary['sleepMinutes'] ?? 0;
+
+          await HealthSyncService.instance.syncLifestyleData(
+            steps: steps > 0 ? steps : null,
+            heartRate: heartRate > 0 ? heartRate.toInt() : null,
+            sleepHours: sleepMins > 0 ? (sleepMins / 60) : null,
+          );
+          debugPrint("Automated periodic health data sync completed.");
+        }
+      }
+    } catch (e) {
+      debugPrint("Automated periodic health sync & schedule generation timer error: $e");
     }
   });
 }

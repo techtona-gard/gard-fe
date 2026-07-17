@@ -9,7 +9,10 @@ import 'package:gard/pages/education_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:gard/services/sos_history_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:gard/models/history_model.dart';
+import 'package:gard/services/history_service.dart';
+import 'package:gard/pages/lifestyle_graph_page.dart';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -140,20 +143,36 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     setState(() => _isSosHolding = false);
     _sosController.reset();
 
-    final emergencyNumber = _profileData?['emergency_wa'] ?? '';
+    // Fetch fresh profile data to avoid stale cached contact from initState
+    final freshData = await SupabaseService.instance.getProfileData();
+    final emergencyNumber = freshData?['emergency_wa'] ?? '';
     
-    // 1️⃣ Log SOS ke riwayat (in-memory, langsung)
-    SosHistoryService().addEvent(number: emergencyNumber.isNotEmpty ? emergencyNumber : '081280295818');
+    // 1️⃣ Log SOS ke riwayat (Supabase database)
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final displayNum = (emergencyNumber.isNotEmpty && emergencyNumber != '-') ? emergencyNumber : '081280295818';
+    if (userId != null) {
+      final history = HistoryModel(
+        historyId: 0,
+        userId: userId,
+        category: 'DETEKSI',
+        historyDate: DateTime.now(),
+        description: 'Panggilan ke $displayNum',
+      );
+      await HistoryService.instance.insertHistory(history);
+    }
 
-    // 2️⃣ Kirim pesan WA di background (fire-and-forget, tidak menunggu)
-    // _sendFonnteWhatsApp(); // DIMATIKAN SEMENTARA AGAR API TIDAK HABIS
+    // 2️⃣ Kirim WA DULU dan tunggu sampai selesai sebelum telepon.
+    //    PENTING: directCall menyebabkan OS men-suspend isolate Dart,
+    //    sehingga HTTP request yang sedang berjalan akan di-cancel jika
+    //    tidak di-await terlebih dahulu.
+    await _sendFonnteWhatsApp(emergencyNumber);
 
-    // 3️⃣ Langsung telepon ke nomor darurat
+    // 3️⃣ Baru telepon ke nomor darurat setelah WA terkirim
     try {
       final status = await Permission.phone.request();
       if (status.isGranted) {
         const platform = MethodChannel('com.gard.sos/call');
-        if (emergencyNumber.isNotEmpty) {
+        if (emergencyNumber.isNotEmpty && emergencyNumber != '-') {
           await platform.invokeMethod('directCall', {'number': emergencyNumber});
         }
       } else {
@@ -187,21 +206,40 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  void _sendFonnteWhatsApp() async {
+  Future<void> _sendFonnteWhatsApp(String? emergencyNumber) async {
     try {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+      Position? position;
+      try {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+          position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+            timeLimit: const Duration(seconds: 5),
+          );
+        }
+      } catch (geoErr) {
+        debugPrint('Geolocator error: $geoErr. Sending message without location.');
+      }
+
       const String token = 'ZV8uTKHBBwpK69p6MU4V';
-      const String targetNumber = '081272733891';
-      final String message = '🚨 SOS DARURAT!\n\n'
-          'Pengguna GARD *Brawidya Dharma* terdeteksi membutuhkan bantuan medis segera akibat serangan gejala lambung/GERD akut.\n\n'
-          '📍 Lokasi Terkini:\n'
-          'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}\n\n'
-          '📋 Ringkasan Rekam Medis:\n'
-          '- 16 Juli: Gejala GERD (Sedang)\n'
-          '- 14 Juli: Konsultasi dr. Andi (Sp.PD)\n'
-          '- 10 Juli: GerdQ (Resiko Tinggi)';
+      final String targetNumber = (emergencyNumber != null && emergencyNumber.isNotEmpty && emergencyNumber != '-') ? emergencyNumber : '081272733891';
+      
+      String message = '🚨 SOS DARURAT!\n\n'
+          'Pengguna GARD *Brawidya Dharma* terdeteksi membutuhkan bantuan medis segera akibat serangan gejala lambung/GERD akut.\n\n';
+      
+      if (position != null) {
+        message += '📍 Lokasi Terkini:\n'
+            'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}\n\n';
+      } else {
+        message += '📍 Lokasi Terkini: (Izin GPS tidak aktif / Gagal mendeteksi lokasi)\n\n';
+      }
+      
+      message += '📋 Ringkasan Rekam Medis:\n'
+          '- Gejala GERD Akut terdeteksi\n'
+          '- Riwayat GerdQ Tersimpan';
 
       final response = await http.post(
         Uri.parse('https://api.fonnte.com/send'),
@@ -220,8 +258,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          CustomScrollView(
-            slivers: [
+          RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async {
+              await _loadProfileData();
+              await _loadHealthData();
+            },
+            child: CustomScrollView(
+              slivers: [
               // ── Header Section ─────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Container(
@@ -268,7 +312,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             ),
                           ),
                           const SizedBox(width: 14),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -415,6 +459,29 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                 ),
               ),
+              
+              // Tombol Lihat Detail Grafik
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16, left: 20, right: 20),
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LifestyleGraphPage()),
+                      );
+                    },
+                    icon: const Icon(Icons.bar_chart_rounded, size: 18),
+                    label: const Text('Lihat Riwayat & Grafik'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.softAccent, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ),
 
               // ── Layanan Utama ─────────────────────────────────────────────
               SliverPadding(
@@ -465,9 +532,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                           _buildServiceItem('Chatbot', Icons.smart_toy_rounded, const Color(0xFF2C5358), const Color(0xFFE8F5E9),
                               () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatbotPage()))),
                           _buildServiceItem('Apotek', Icons.local_pharmacy_rounded, const Color(0xFF6A1B9A), const Color(0xFFF3E5F5)),
-                          _buildServiceItem('Nutrisi', Icons.restaurant_menu_rounded, const Color(0xFF2E7D32), const Color(0xFFE8F5E9)),
-                          _buildServiceItem('Komunitas', Icons.groups_2_rounded, const Color(0xFF00838F), const Color(0xFFE0F7FA)),
-                          _buildServiceItem('Lainnya', Icons.grid_view_rounded, const Color(0xFF546E7A), const Color(0xFFECEFF1)),
                         ],
                       ),
                     ],
@@ -478,6 +542,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               const SliverToBoxAdapter(child: SizedBox(height: 160)),
             ],
           ),
+        ),
 
           // ── SOS Button ────────────────────────────────────────────────
           Positioned(

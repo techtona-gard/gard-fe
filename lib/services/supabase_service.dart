@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:gard/services/google_calendar_service.dart';
 
 class SupabaseService {
   static final SupabaseService instance = SupabaseService._init();
@@ -32,6 +33,10 @@ class SupabaseService {
         OAuthProvider.google,
         redirectTo: 'gardapp://login-callback',
         authScreenLaunchMode: LaunchMode.externalApplication,
+        scopes: 'https://www.googleapis.com/auth/calendar',
+        queryParams: {
+          'prompt': 'consent',
+        },
       );
     } catch (e) {
       debugPrint("Google OAuth Error: $e");
@@ -72,6 +77,7 @@ class SupabaseService {
 
   /// Saves the user's physical profile details to the database
   Future<void> saveProfile({
+    required String name,
     required num height,
     required num weight,
     required String birthDate,
@@ -79,6 +85,7 @@ class SupabaseService {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('mock_profile_completed', true);
+    await prefs.setString('profile_name', name);
     await prefs.setString('profile_height', height.toString());
     await prefs.setString('profile_weight', weight.toString());
     await prefs.setString('profile_birth_date', birthDate);
@@ -92,6 +99,9 @@ class SupabaseService {
     try {
       final user = _client.auth.currentUser;
       if (user == null) throw Exception("No authenticated user found.");
+
+      // Update auth user metadata for 'full_name'
+      await _client.auth.updateUser(UserAttributes(data: {'full_name': name}));
 
       await _client.from('users').upsert({
         'user_id': user.id,
@@ -139,6 +149,7 @@ class SupabaseService {
     await prefs.remove('mock_logged_in');
     await prefs.remove('mock_profile_completed');
     await prefs.remove('profile_gerd_status');
+    await GoogleCalendarService.instance.clearPersistedToken();
     if (isConfigured) {
       try {
         await _client.auth.signOut();

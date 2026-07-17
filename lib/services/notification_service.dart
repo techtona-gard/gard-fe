@@ -8,7 +8,7 @@ import 'package:gard/pages/chatbot_page.dart';
 class NotificationService {
   static Future<void> initializeNotification() async {
     await AwesomeNotifications().initialize(
-      null,
+      'resource://mipmap/launcher_icon',
       [
         NotificationChannel(
           channelGroupKey: 'reminders_group',
@@ -169,6 +169,67 @@ class NotificationService {
       debugPrint('Notification Scheduled for $finalInterval seconds');
     } catch (e) {
       debugPrint('Error scheduling notification: $e');
+    }
+  }
+
+  static Future<void> scheduleEatingReminderAt({
+    required String title,
+    required String body,
+    required DateTime scheduledTime,
+  }) async {
+    try {
+      bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
+      if (!isAllowed) return;
+
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: scheduledTime.millisecondsSinceEpoch.remainder(100000),
+          channelKey: 'eating_reminder',
+          title: title,
+          body: body,
+          category: NotificationCategory.Alarm,
+          notificationLayout: NotificationLayout.BigText,
+          fullScreenIntent: true, 
+          wakeUpScreen: true,
+          autoDismissible: false,
+          locked: true,
+          backgroundColor: const Color(0xFF364E4F),
+          largeIcon: 'asset://assets/images/logo_icon.png',
+        ),
+        actionButtons: [
+          NotificationActionButton(
+            key: 'FOTO_MAKANAN',
+            label: 'Foto Makanan',
+            color: Colors.green,
+            actionType: ActionType.Default,
+          ),
+          NotificationActionButton(
+            key: 'CHAT',
+            label: 'Chat (Sudah Makan)',
+            actionType: ActionType.Default,
+          ),
+          NotificationActionButton(
+            key: 'SNOOZE_OPTIONS',
+            label: 'Snooze...',
+            actionType: ActionType.Default,
+          ),
+        ],
+        schedule: NotificationCalendar(
+          year: scheduledTime.year,
+          month: scheduledTime.month,
+          day: scheduledTime.day,
+          hour: scheduledTime.hour,
+          minute: scheduledTime.minute,
+          second: 0,
+          millisecond: 0,
+          timeZone: await AwesomeNotifications().getLocalTimeZoneIdentifier(),
+          preciseAlarm: true,
+          repeats: false,
+        ),
+      );
+      debugPrint('Notification Scheduled at $scheduledTime');
+    } catch (e) {
+      debugPrint('Error scheduling notification at time: $e');
     }
   }
 }

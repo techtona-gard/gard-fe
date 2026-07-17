@@ -4,6 +4,7 @@ import 'package:gard/main.dart';
 import 'package:gard/pages/doctor_register_page.dart';
 import 'package:gard/constants/app_colors.dart';
 import 'package:gard/services/supabase_service.dart';
+import 'package:gard/services/google_calendar_service.dart';
 import 'package:gard/pages/complete_profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -29,6 +30,14 @@ class _LoginPageState extends State<LoginPage> {
 
       // Only navigate on a fresh sign-in, NOT on initialSession
       if (event == AuthChangeEvent.signedIn && mounted) {
+        // Persist the Google provider token so it survives app restarts
+        final providerToken = data.session?.providerToken;
+        if (providerToken != null && providerToken.isNotEmpty) {
+          await GoogleCalendarService.instance.persistProviderToken(providerToken);
+          debugPrint("Token Calendar Berhasil Disimpan dari Login");
+        } else {
+          debugPrint("Warning: Token Calendar kosong/tidak didapatkan pada saat Login");
+        }
         await _navigateAfterLogin();
       }
     });
@@ -107,8 +116,8 @@ class _LoginPageState extends State<LoginPage> {
                 // ── LOGO ────────────────────────────────────────────────────
                 Image.asset(
                   'assets/images/logo_full.png',
-                  width: 200,
-                  height: 100,
+                  width: 160,
+                  height: 80,
                   fit: BoxFit.contain,
                 ),
 

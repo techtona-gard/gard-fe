@@ -1,10 +1,17 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gard/constants/app_colors.dart';
+import 'package:gard/services/agent_service.dart';
+import 'package:gard/services/supabase_service.dart';
+import 'package:gard/services/health_connect_service.dart';
+import 'package:gard/main.dart';
+import 'package:gard/pages/camera_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChatbotPage extends StatefulWidget {
   final String? capturedImagePath;
-  const ChatbotPage({super.key, this.capturedImagePath});
+  final String? capturedImageBase64;
+  const ChatbotPage({super.key, this.capturedImagePath, this.capturedImageBase64});
 
   @override
   State<ChatbotPage> createState() => _ChatbotPageState();
@@ -15,6 +22,11 @@ class _ChatbotPageState extends State<ChatbotPage> {
   final TextEditingController _chatController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  // Konteks pengguna (diload saat init)
+  Map<String, dynamic>? _profileData;
+  Map<String, dynamic>? _healthSummary;
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -22,42 +34,98 @@ class _ChatbotPageState extends State<ChatbotPage> {
       "role": "bot",
       "text": "Halo! Saya GARD AI. Ada yang bisa saya bantu terkait keluhan atau nutrisi lambung Anda hari ini?",
     });
+    _loadContext();
 
     // If came from camera, auto-send the captured image
     if (widget.capturedImagePath != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _addImageMessage(widget.capturedImagePath!);
+        _addImageMessage(
+          widget.capturedImagePath!,
+          base64: widget.capturedImageBase64,
+        );
       });
     }
   }
 
-  void _addImageMessage(String imagePath) {
+  /// Load profil + health data pengguna sebagai konteks untuk AI
+  Future<void> _loadContext() async {
+    try {
+      final profile = await SupabaseService.instance.getProfileData();
+      final healthService = HealthService();
+      await healthService.init();
+      final hasHealth = await healthService.hasPermissions();
+      Map<String, dynamic>? health;
+      if (hasHealth) {
+        health = await healthService.getTodaySummary();
+      }
+      if (mounted) {
+        setState(() {
+          _profileData = profile;
+          _healthSummary = health;
+        });
+      }
+    } catch (e) {
+      debugPrint('ChatbotPage: failed to load context: $e');
+    }
+  }
+
+  void _addImageMessage(String imagePath, {String? base64}) {
     setState(() {
       _messages.add({"role": "user", "image": imagePath});
+      _messages.add({"role": "bot", "loading": true});
     });
     _scrollToBottom();
 
-    // Simulate AI analysis after 1.5 seconds
+    if (base64 != null) {
+      _sendImageToApi(base64);
+    } else {
+      _simulateAnalysis();
+    }
+  }
+
+  /// Kirim gambar ke /api/v1/scan-food dengan base64
+  Future<void> _sendImageToApi(String base64Image) async {
+    final userId =
+        Supabase.instance.client.auth.currentUser?.id ?? 'anonymous';
+
+    final result = await AgentService.instance.scanFood(
+      userId: userId,
+      imageBase64: base64Image,
+      chatInput: 'Apakah makanan ini aman untuk penderita GERD? Berikan analisis kandungan nutrisinya.',
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _messages.removeWhere((m) => m['loading'] == true);
+      _messages.add({
+        'role': 'bot',
+        'text': result.analysisText,
+      });
+    });
+    _scrollToBottom();
+  }
+
+  void _simulateAnalysis() {
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (!mounted) return;
-      final now = DateTime.now();
-      String mealContext;
-      if (now.hour >= 6 && now.hour < 10) {
-        mealContext = "sarapan pagi";
-      } else if (now.hour >= 11 && now.hour < 14) {
-        mealContext = "makan siang";
-      } else if (now.hour >= 17 && now.hour < 20) {
-        mealContext = "makan malam";
-      } else {
-        mealContext = "snack di luar jam makan utama";
-      }
-
       setState(() {
+        _messages.removeWhere((m) => m['loading'] == true);
+        final now = DateTime.now();
+        String mealContext;
+        if (now.hour >= 6 && now.hour < 10) {
+          mealContext = "sarapan pagi";
+        } else if (now.hour >= 11 && now.hour < 14) {
+          mealContext = "makan siang";
+        } else if (now.hour >= 17 && now.hour < 20) {
+          mealContext = "makan malam";
+        } else {
+          mealContext = "snack di luar jam makan utama";
+        }
         _messages.add({
           "role": "bot",
           "text": null,
           "analysis": {
-            "title": "Analisis Makanan Terdeteksi",
+            "title": "Analisis Makanan (Simulasi)",
             "mealTime": mealContext,
             "items": ["Karbohidrat sedang", "Protein cukup", "Lemak rendah"],
             "risk": "Rendah",
@@ -68,7 +136,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
               "💧 Minum air hangat 30 menit setelah makan.",
               "🚫 Hindari konsumsi kopi/teh bersamaan dengan makanan ini.",
             ],
-            "note": "Analisis ini bersifat indikatif. Konsultasikan ke dokter untuk diagnosis lebih lanjut.",
+            "note": "Ini adalah simulasi. Hubungkan ke backend API untuk analisis nyata.",
           }
         });
         _scrollToBottom();
@@ -76,31 +144,40 @@ class _ChatbotPageState extends State<ChatbotPage> {
     });
   }
 
+  /// Kirim pesan teks ke /api/v1/chat (AI Agent)
   void _sendMessage([String? text]) {
     final messageText = text ?? _chatController.text.trim();
-    if (messageText.isEmpty) return;
+    if (messageText.isEmpty || _isLoading) return;
 
     setState(() {
       _messages.add({"role": "user", "text": messageText});
+      _messages.add({"role": "bot", "loading": true});
       if (text == null) _chatController.clear();
-      _scrollToBottom();
-
-      Future.delayed(const Duration(seconds: 1), () {
-        if (!mounted) return;
-        setState(() {
-          String response = "Analisis GARD AI: Terima kasih atas pertanyaannya. Jika gejala memberat, harap hubungi tenaga medis.";
-          if (messageText.contains("Kambuh")) {
-            response = "🚨 GARD Trigger Alert: Gejala kambuh terdeteksi. Disarankan minum air hangat, duduk tegak, dan hindari makanan asam selama 2 jam ke depan.";
-          } else if (messageText.contains("Menu")) {
-            response = "🥗 Rekomendasi Menu: Konsumsi nasi lembek, sop ayam bening, atau melon. Hindari santan, cabai, dan kafein saat ini.";
-          } else if (messageText.contains("Obat")) {
-            response = "💊 Info Obat: Antasida atau Sucralfate sering digunakan untuk meredakan asam lambung. Pastikan jeda makan 30 menit sebelum/sesudah minum obat.";
-          }
-          _messages.add({"role": "bot", "text": response});
-          _scrollToBottom();
-        });
-      });
+      _isLoading = true;
     });
+    _scrollToBottom();
+
+    _callChatApi(messageText);
+  }
+
+  Future<void> _callChatApi(String messageText) async {
+    final userId =
+        Supabase.instance.client.auth.currentUser?.id ?? 'anonymous';
+
+    final result = await AgentService.instance.sendChat(
+      userId: userId,
+      chatInput: messageText,
+      healthSummary: _healthSummary,
+      profileData: _profileData,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _messages.removeWhere((m) => m['loading'] == true);
+      _messages.add({'role': 'bot', 'text': result.message});
+    });
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -139,9 +216,27 @@ class _ChatbotPageState extends State<ChatbotPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildUploadOption(Icons.camera_alt_rounded, 'Kamera', AppColors.primary),
-                _buildUploadOption(Icons.photo_library_rounded, 'Galeri', AppColors.darkAccent),
-                _buildUploadOption(Icons.description_rounded, 'Dokumen', AppColors.warning),
+                _buildUploadOption(Icons.camera_alt_rounded, 'Kamera', AppColors.primary, () {
+                  Navigator.pop(context);
+                  if (cameras.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => CameraPage(camera: cameras.first)),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Kamera tidak tersedia')),
+                    );
+                  }
+                }),
+                _buildUploadOption(Icons.photo_library_rounded, 'Galeri', AppColors.darkAccent, () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Fitur galeri segera hadir! Silakan gunakan kamera.')),
+                  );
+                }),
               ],
             ),
             const SizedBox(height: 16),
@@ -151,9 +246,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
     );
   }
 
-  Widget _buildUploadOption(IconData icon, String label, Color color) {
+  Widget _buildUploadOption(IconData icon, String label, Color color, VoidCallback onTap) {
     return InkWell(
-      onTap: () => Navigator.pop(context),
+      onTap: onTap,
       child: Column(
         children: [
           Container(
@@ -353,6 +448,33 @@ class _ChatbotPageState extends State<ChatbotPage> {
                 final msg = _messages[index];
                 final isBot = msg['role'] == 'bot';
 
+                // Loading bubble (waiting for API response)
+                if (msg['loading'] == true) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.card,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                          bottomLeft: Radius.circular(4),
+                          bottomRight: Radius.circular(20),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10)
+                        ],
+                      ),
+                      child: const TypingIndicator(),
+                    ),
+                  );
+                }
+
                 // Image message from user
                 if (msg['image'] != null) {
                   return Align(
@@ -475,11 +597,11 @@ class _ChatbotPageState extends State<ChatbotPage> {
                   onTap: _showUploadMenu,
                   child: Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                        color: AppColors.softAccent,
-                        borderRadius: BorderRadius.circular(14)),
+                    decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle),
                     child: const Icon(Icons.add_rounded,
-                        color: AppColors.primary, size: 24),
+                        color: Colors.white, size: 24),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -487,9 +609,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.softAccent)),
+                        border: Border.all(color: Colors.grey.shade200)),
                     child: TextField(
                       controller: _chatController,
                       decoration: const InputDecoration(
@@ -543,6 +665,76 @@ class _ChatbotPageState extends State<ChatbotPage> {
                     color: color)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class TypingIndicator extends StatefulWidget {
+  const TypingIndicator({super.key});
+
+  @override
+  State<TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<TypingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late List<Animation<double>> _animations;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+
+    _animations = List.generate(3, (index) {
+      final start = index * 0.2;
+      final end = start + 0.6;
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: Interval(start, end, curve: Curves.easeInOut),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(3, (index) {
+          return AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final val = _animations[index].value;
+              final offset = -6.0 * (val > 0.5 ? (1.0 - val) * 2 : val * 2);
+              return Transform.translate(
+                offset: Offset(0, offset),
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              );
+            },
+          );
+        }),
       ),
     );
   }

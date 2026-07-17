@@ -20,6 +20,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String gerdStatus = "Belum Dites";
   String email = "";
   String birthDate = "-";
+  String avatarUrl = "";
   bool _isLoading = true;
 
   @override
@@ -40,6 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
         birthDate = data['birth_date'] ?? birthDate;
         emergencyContact = data['emergency_wa'] ?? emergencyContact;
         gerdStatus = data['gerd_status'] ?? gerdStatus;
+        avatarUrl = data['avatar_url'] ?? avatarUrl;
       });
     }
     setState(() => _isLoading = false);
@@ -184,6 +186,7 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() => _isLoading = true);
       try {
         await SupabaseService.instance.saveProfile(
+          name: newName,
           height: num.tryParse(newHeight) ?? 175,
           weight: num.tryParse(newWeight) ?? 70,
           birthDate: newBirthDate,
@@ -277,12 +280,33 @@ class _ProfilePageState extends State<ProfilePage> {
                     // Rounded Rectangle Avatar
                     ClipRRect(
                       borderRadius: BorderRadius.circular(18),
-                      child: Image.network(
-                        'https://i.pravatar.cc/300',
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                      ),
+                      child: avatarUrl.isNotEmpty
+                          ? Image.network(
+                              avatarUrl,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  color: AppColors.softAccent,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: const Icon(Icons.person_rounded,
+                                    size: 50, color: AppColors.primary),
+                              ),
+                            )
+                          : Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: AppColors.softAccent,
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: const Icon(Icons.person_rounded,
+                                  size: 50, color: AppColors.primary),
+                            ),
                     ),
                     const SizedBox(height: 18),
                     // Name

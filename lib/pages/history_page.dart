@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gard/constants/app_colors.dart';
 import 'package:gard/pages/history_detail_page.dart';
-import 'package:gard/services/sos_history_service.dart';
+import 'package:gard/models/history_model.dart';
+import 'package:gard/services/history_service.dart';
+import 'package:intl/intl.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -11,185 +13,209 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  static final List<HistoryItem> _historyItems = [
-    const HistoryItem(
-      title: 'Gejala GERD Terdeteksi',
-      date: '16 Juli 2024, 08:30',
-      description: 'Tingkat Keparahan: Sedang',
-      category: 'DETEKSI',
-      icon: Icons.warning_amber_rounded,
-      color: Colors.orange,
-      result: 'Kamera GARD mendeteksi 5 gejala aktif',
-      notes:
-          'Hindari makanan berlemak tinggi, kafein, dan alkohol. Makan dalam porsi kecil dan sering. Jangan berbaring segera setelah makan. Gunakan bantal lebih tinggi saat tidur. Konsultasikan ke dokter jika gejala berlanjut lebih dari 3 hari.',
-      symptoms: [
-        'Rasa terbakar di dada (heartburn)',
-        'Regurgitasi asam ke tenggorokan',
-        'Kesulitan menelan (disfagia)',
-        'Mual setelah makan',
-        'Sendawa berlebihan',
-      ],
-    ),
-    const HistoryItem(
-      title: 'Konsultasi Dokter',
-      date: '14 Juli 2024, 10:00',
-      description: 'dr. Andi Pratama, Sp.PD',
-      category: 'KONSULTASI',
-      icon: Icons.medical_services_outlined,
-      color: AppColors.primary,
-      doctor: 'dr. Andi Pratama, Sp.PD',
-      result: 'Durasi konsultasi: 45 menit',
-      notes:
-          'Pasien disarankan untuk menjalani endoskopi jika gejala tidak membaik dalam 2 minggu. Resep: Omeprazole 20mg 2x sehari selama 14 hari. Pantoprazole sebagai alternatif. Hindari NSAIDs dan aspirin.',
-      symptoms: [
-        'Dyspepsia fungsional',
-        'Refluks asam lambung ringan',
-        'Perut kembung',
-      ],
-    ),
-    const HistoryItem(
-      title: 'Pemeriksaan GerdQ',
-      date: '10 Juli 2024, 20:00',
-      description: 'Skor GerdQ: 12/18',
-      category: 'KUESIONER',
-      icon: Icons.assignment_outlined,
-      color: Colors.red,
-      result: 'Hasil: Resiko Tinggi GERD',
-      notes:
-          'Skor GerdQ ≥ 8 mengindikasikan kemungkinan GERD yang signifikan. Disarankan segera berkonsultasi dengan dokter spesialis. Pemantauan pola makan harus ditingkatkan dan stres harus dikurangi.',
-      symptoms: [
-        'Heartburn ≥ 2 hari/minggu',
-        'Regurgitasi ≥ 2 hari/minggu',
-        'Gangguan tidur akibat gejala',
-        'Penggunaan obat antasida tambahan',
-      ],
-    ),
-  ];
+  String _selectedFilter = 'Semua';
+
+  // Helper untuk warna ikon berdasarkan kategori
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'DETEKSI':
+        return Icons.warning_amber_rounded;
+      case 'KONSULTASI':
+        return Icons.medical_services_outlined;
+      case 'KUESIONER':
+        return Icons.assignment_outlined;
+      case 'SOS':
+        return Icons.sos_rounded;
+      default:
+        return Icons.history_rounded;
+    }
+  }
+
+  String _getTitle(String category) {
+    switch (category) {
+      case 'DETEKSI':
+        return 'Deteksi Kondisi GERD';
+      case 'KONSULTASI':
+        return 'Konsultasi Medis';
+      case 'KUESIONER':
+        return 'Hasil Pemeriksaan GerdQ';
+      case 'SOS':
+        return 'Riwayat Panggilan SOS Darurat';
+      default:
+        return 'Detail Riwayat';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: SosHistoryService(),
-      builder: (context, _) {
-        final sosEvents = SosHistoryService().events;
-        final totalRiwayat = _historyItems.length + sosEvents.length;
-        return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header ──────────────────────────────────────────────────
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
-              decoration: const BoxDecoration(
-                gradient: AppColors.primaryGradient,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Rekam Medis',
-                    style: TextStyle(
-                        color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Catatan perjalanan kesehatan Anda',
-                    style: TextStyle(color: Colors.white60, fontSize: 13),
-                  ),
-                  const SizedBox(height: 20),
-                  // Stat pills row
-                  Row(
-                    children: [
-                      _buildHeaderStatPill(null, '$totalRiwayat', 'Riwayat'),
-                      const SizedBox(width: 10),
-                      _buildHeaderStatPill(null, '1', 'Konsultasi'),
-                      const SizedBox(width: 10),
-                      _buildHeaderStatPill(Icons.favorite_rounded, 'Sedang', 'Kondisi'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Filter Chips ────────────────────────────────────────
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildFilterChip('Semua', true),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('Deteksi', false),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('Konsultasi', false),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('Kuesioner', false),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('SOS', false),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  Row(
-                    children: [
-                      Container(width: 3, height: 16,
-                          decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(2))),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'RIWAYAT TERBARU',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textSecondary,
-                          letterSpacing: 1.1,
+    return FutureBuilder<List<HistoryModel>>(
+      future: HistoryService.instance.fetchHistory(),
+      builder: (context, snapshot) {
+        final List<HistoryModel> historyItems = snapshot.data ?? [];
+        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+        
+        final totalRiwayat = historyItems.length;
+            
+            return Scaffold(
+              backgroundColor: AppColors.background,
+              body: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Header ──────────────────────────────────────────────────
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(24, 60, 24, 32),
+                      decoration: const BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(32),
+                          bottomRight: Radius.circular(32),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Rekam Medis',
+                            style: TextStyle(
+                                color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Catatan perjalanan kesehatan Anda',
+                            style: TextStyle(color: Colors.white60, fontSize: 13),
+                          ),
+                          const SizedBox(height: 20),
+                          // Stat pills row
+                          Row(
+                            children: [
+                              _buildHeaderStatPill(null, '$totalRiwayat', 'Riwayat'),
+                              const SizedBox(width: 10),
+                              _buildHeaderStatPill(null, '0', 'Konsultasi'),
+                              const SizedBox(width: 10),
+                              _buildHeaderStatPill(Icons.favorite_rounded, 'Sedang', 'Kondisi'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
 
-                  // SOS events dari service (ditampilkan paling atas)
-                  ...sosEvents.map((e) => _buildSosCard(context, e)),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Filter Chips ────────────────────────────────────────
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _buildFilterChip('Semua'),
+                                const SizedBox(width: 8),
+                                _buildFilterChip('Deteksi'),
+                                const SizedBox(width: 8),
+                                _buildFilterChip('Konsultasi'),
+                                const SizedBox(width: 8),
+                                _buildFilterChip('Kuesioner'),
+                                const SizedBox(width: 8),
+                                _buildFilterChip('SOS'),
+                              ],
+                            ),
+                          ),
 
-                  ..._historyItems.map((item) => _buildHistoryCard(context, item)),
+                          const SizedBox(height: 20),
 
-                  const SizedBox(height: 120),
-                ],
+                          Row(
+                            children: [
+                              Container(width: 3, height: 16,
+                                  decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(2))),
+                              const SizedBox(width: 10),
+                              const Text(
+                                'RIWAYAT TERBARU',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textSecondary,
+                                  letterSpacing: 1.1,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+
+                          if (isLoading)
+                            const Center(child: Padding(
+                              padding: EdgeInsets.all(20.0),
+                              child: CircularProgressIndicator(color: AppColors.primary),
+                            ))
+                          else if (historyItems.where((item) {
+                            final isSos = item.category.toUpperCase() == 'SOS' || 
+                                (item.category.toUpperCase() == 'DETEKSI' && item.description != null && item.description!.contains('Panggilan ke'));
+                            if (_selectedFilter == 'Semua') return true;
+                            if (_selectedFilter == 'SOS') return isSos;
+                            if (_selectedFilter == 'Deteksi') return item.category.toUpperCase() == 'DETEKSI' && !isSos;
+                            return item.category.toUpperCase() == _selectedFilter.toUpperCase();
+                          }).isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(20.0),
+                              child: Center(
+                                child: Text('Belum ada riwayat medis.',
+                                  style: TextStyle(color: AppColors.textSecondary)),
+                              ),
+                            )
+                          else
+                            ...historyItems
+                                .where((item) {
+                                  final isSos = item.category.toUpperCase() == 'SOS' || 
+                                      (item.category.toUpperCase() == 'DETEKSI' && item.description != null && item.description!.contains('Panggilan ke'));
+                                  if (_selectedFilter == 'Semua') return true;
+                                  if (_selectedFilter == 'SOS') return isSos;
+                                  if (_selectedFilter == 'Deteksi') return item.category.toUpperCase() == 'DETEKSI' && !isSos;
+                                  return item.category.toUpperCase() == _selectedFilter.toUpperCase();
+                                })
+                                .map((item) {
+                                  final isSos = item.category.toUpperCase() == 'SOS' || 
+                                      (item.category.toUpperCase() == 'DETEKSI' && item.description != null && item.description!.contains('Panggilan ke'));
+                                  if (isSos) {
+                                    return _buildSosCard(context, item);
+                                  }
+                                  return _buildHistoryCard(context, item);
+                                }),
+
+                          const SizedBox(height: 120),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  },
-);
+            );
+          },
+        );
   }
 
-  Widget _buildSosCard(BuildContext context, SosEvent event) {
+  Widget _buildSosCard(BuildContext context, HistoryModel event) {
+    // Format timestamp manually since it's a HistoryModel
+    final d = event.historyDate;
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    final formattedTime = '${d.day} ${months[d.month - 1]} ${d.year}, '
+        '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE53935).withOpacity(0.3), width: 1.5),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFE53935).withOpacity(0.07),
+            color: AppColors.primary.withOpacity(0.07),
             blurRadius: 12,
             offset: const Offset(0, 4),
           )
@@ -200,10 +226,10 @@ class _HistoryPageState extends State<HistoryPage> {
         leading: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFEBEE),
+            color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: const Icon(Icons.sos_rounded, color: Color(0xFFE53935), size: 24),
+          child: const Icon(Icons.sos_rounded, color: AppColors.primary, size: 24),
         ),
         title: const Text(
           'SOS Darurat Dikirim',
@@ -213,22 +239,22 @@ class _HistoryPageState extends State<HistoryPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            Text(event.formattedTime,
+            Text(formattedTime,
                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
             const SizedBox(height: 4),
-            Text('Tenaga Kesehatan: ${event.number}',
+            Text(event.description ?? 'Panggilan Darurat',
                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           ],
         ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFEBEE),
+            color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: const Text('SOS',
               style: TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFE53935))),
+                  fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)),
         ),
       ),
     );
@@ -268,27 +294,35 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  Widget _buildFilterChip(String label, bool isActive) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isActive ? AppColors.primary : AppColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: isActive ? AppColors.primary : AppColors.softAccent, width: 1.5),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isActive ? Colors.white : AppColors.textSecondary,
-          fontSize: 12,
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+  Widget _buildFilterChip(String label) {
+    bool isActive = _selectedFilter == label;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFilter = label;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary : AppColors.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: isActive ? AppColors.primary : AppColors.softAccent, width: 1.5),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? Colors.white : AppColors.textSecondary,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+            fontSize: 13,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHistoryCard(BuildContext context, HistoryItem item) {
+  Widget _buildHistoryCard(BuildContext context, HistoryModel item) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -300,11 +334,12 @@ class _HistoryPageState extends State<HistoryPage> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(18),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.softAccent),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: AppColors.primary.withOpacity(0.04),
                 blurRadius: 10,
                 offset: const Offset(0, 3))
           ],
@@ -316,12 +351,12 @@ class _HistoryPageState extends State<HistoryPage> {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: item.color.withOpacity(0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Center(child: Icon(item.icon, color: item.color, size: 20)),
+              child: Center(child: Icon(_getCategoryIcon(item.category), color: AppColors.primary, size: 20)),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             // Content
             Expanded(
               child: Column(
@@ -332,7 +367,7 @@ class _HistoryPageState extends State<HistoryPage> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
-                        child: Text(item.title,
+                        child: Text(_getTitle(item.category),
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
@@ -340,45 +375,45 @@ class _HistoryPageState extends State<HistoryPage> {
                       ),
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: item.color.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(6),
+                          color: AppColors.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           item.category,
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
-                              color: item.color,
+                              color: AppColors.primary,
                               letterSpacing: 0.4),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   // Description
-                  Text(item.description,
-                      style: const TextStyle(
-                          color: AppColors.textPrimary, fontSize: 12)),
-                  const SizedBox(height: 3),
+                  if (item.description != null)
+                    Text(item.description!,
+                        style: const TextStyle(
+                            color: AppColors.textPrimary, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 6),
                   // Date row
                   Row(
                     children: [
                       const Icon(Icons.access_time_rounded,
-                          size: 10, color: AppColors.textSecondary),
-                      const SizedBox(width: 3),
-                      Text(item.date,
+                          size: 11, color: AppColors.textSecondary),
+                      const SizedBox(width: 4),
+                      Text(DateFormat('dd MMMM yyyy, HH:mm').format(item.historyDate),
                           style: const TextStyle(
-                              color: AppColors.textSecondary, fontSize: 10)),
+                              color: AppColors.textSecondary, fontSize: 11)),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right_rounded,
-                color: AppColors.textSecondary, size: 18),
           ],
         ),
       ),
